@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Zero100</string>
+
+    <string name="gps_module">u-blox M9</string>
+    <string name="km_h">km/h</string>
+    <string name="seconds">sec</string>
+    <string name="hdop">HDOP</string>
+    <string name="fix">Fix</string>
+    <string name="satellites">Sats</string>
+    <string name="satellites_count">%d</string>
+    <string name="best_record">Best Record</string>
+    <string name="gps_connect">GPS Connect</string>
+    <string name="connected">Connected</string>
+    <string name="connecting">Connecting…</string>
+    <string name="error">Error</string>
+    <string name="start_measure">Start</string>
+    <string name="stabilizing">Stabilizing</string>
+    <string name="measure_history">History</string>
+    <string name="settings">Settings</string>
+    <string name="nmea_debug">NMEA Debug</string>
+    <string name="nmea_hide">Hide NMEA</string>
+    <string name="nmea_data">NMEA Data:</string>
+    <string name="hz_active">25Hz Active (%dHz)</string>
+    <string name="hz_manual">Switch to 25Hz (Currently %dHz)</string>
+
+    <string name="stage_connect">Connect</string>
+    <string name="stage_satellite">Sats</string>
+    <string name="stage_25hz">25Hz</string>
+    <string name="stage_ready">Ready</string>
+
+    <string name="fix_none">None</string>
+    <string name="fix_gps">GPS</string>
+    <string name="fix_dgps">DGPS</string>
+    <string name="fix_rtk">RTK</string>
+    <string name="fix_float">Float</string>
+
+    <string name="measure_title">0-%d km/h</string>
+    <string name="status_stop">Stop the car</string>
+    <string name="status_go">GO!</string>
+    <string name="status_measuring">Measuring…</string>
+    <string name="status_done">Done!</string>
+    <string name="peak_speed">Peak: %s km/h</string>
+    <string name="stop_measure">Stop</string>
+    <string name="stop_long_press">Long press to stop</string>
+    <string name="go_back">Back</string>
+    <string name="retry">Retry</string>
+    <string name="cancel">Cancel</string>
+
+    <string name="history_title">History</string>
+    <string name="no_records">No records yet</string>
+    <string name="delete_all">Delete All</string>
+    <string name="delete_all_confirm">Delete all measurement records?</string>
+    <string name="delete">Delete</string>
+
+    <string name="target_speed">Target Speed</string>
+    <string name="target_speed_desc">Select the speed at which measurement automatically completes.</string>
+    <string name="current_target">Current: 0-%d km/h</string>
+    <string name="rollout_title">1-Foot Rollout Correction</string>
+    <string name="rollout_desc">Drag race standard correction. Subtracts ~0.3s from the result. Timer starts when the car has traveled 1 foot (30cm).</string>
+    <string name="rollout_active">1-Foot Rollout active: 0.3s subtracted from results</string>
+    <string name="gps_info">GPS Info</string>
+    <string name="info_module">Module</string>
+    <string name="info_module_value">u-blox M9 (USB OTG)</string>
+    <string name="info_rate">Update Rate</string>
+    <string name="info_rate_value">25Hz (40ms interval)</string>
+    <string name="info_condition">Start Condition</string>
+    <string name="info_condition_value">25Hz + 8+ Sats + HDOP &lt; 3.0</string>
+    <string name="info_splits">Split Records</string>
+    <string name="info_splits_value">60 / 100 / 150 / 200 km/h</string>
+</resources>

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 배경 원 (외곽 링) -->
+    <path
+        android:fillColor="#E53935"
+        android:pathData="M54,54m-34,0a34,34 0,1 1,68 0a34,34 0,1 1,-68 0"/>
+
+    <!-- 내부 어두운 원 (게이지 배경) -->
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M54,54m-28,0a28,28 0,1 1,56 0a28,28 0,1 1,-56 0"/>
+
+    <!-- 게이지 눈금 호 (상단 반원, 빨간색) -->
+    <path
+        android:strokeColor="#E53935"
+        android:strokeWidth="3"
+        android:fillColor="#00000000"
+        android:pathData="M30,62 A28,28 0 0,1 78,62"
+        android:strokeLineCap="round"/>
+
+    <!-- 게이지 눈금 틱 마크 (왼쪽) -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"
+        android:pathData="M32,58 L36,56"/>
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"
+        android:pathData="M34,48 L38,48"/>
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"
+        android:pathData="M40,40 L43,42"/>
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"
+        android:pathData="M50,36 L51,40"/>
+
+    <!-- 게이지 눈금 틱 마크 (오른쪽) -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"
+        android:pathData="M76,58 L72,56"/>
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"
+        android:pathData="M74,48 L70,48"/>
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"
+        android:pathData="M68,40 L65,42"/>
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"
+        android:pathData="M58,36 L57,40"/>
+
+    <!-- 바늘 (오른쪽 위를 가리킴 - 최고속도 방향) -->
+    <path
+        android:fillColor="#E53935"
+        android:pathData="M54,54 L53,52 L70,38 L71,39 L55,55Z"/>
+
+    <!-- 바늘 중심 원 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,54m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0"/>
+
+    <!-- "0" 텍스트 (좌하단) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M36,72 L36,65 Q36,62 39,62 L41,62 Q44,62 44,65 L44,72 Q44,75 41,75 L39,75 Q36,75 36,72Z M39,65 L39,72 L41,72 L41,65Z"/>
+
+    <!-- 화살표 (중앙 하단) -->
+    <path
+        android:fillColor="#E53935"
+        android:pathData="M48,67 L55,67 L53,64 L56,64 L60,68.5 L56,73 L53,73 L55,70 L48,70Z"/>
+
+    <!-- "100" 텍스트 간략화 — 작은 숫자 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M62,65 L62,75 L64,75 L64,65Z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M66,72 L66,65 Q66,62 68.5,62 Q71,62 71,65 L71,72 Q71,75 68.5,75 Q66,75 66,72Z M68,65 L68,72 L69.5,72 L69.5,65Z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M73,72 L73,65 Q73,62 75.5,62 Q78,62 78,65 L78,72 Q78,75 75.5,75 Q73,75 73,72Z M75,65 L75,72 L76.5,72 L76.5,65Z"/>
+
+</vector>

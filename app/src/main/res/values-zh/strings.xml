@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Zero100</string>
+
+    <string name="gps_module">u-blox M9</string>
+    <string name="km_h">km/h</string>
+    <string name="seconds">秒</string>
+    <string name="hdop">HDOP</string>
+    <string name="fix">Fix</string>
+    <string name="satellites">卫星</string>
+    <string name="satellites_count">%d颗</string>
+    <string name="best_record">最佳记录</string>
+    <string name="gps_connect">GPS连接</string>
+    <string name="connected">已连接</string>
+    <string name="connecting">连接中…</string>
+    <string name="error">错误</string>
+    <string name="start_measure">开始测量</string>
+    <string name="stabilizing">稳定中</string>
+    <string name="measure_history">测量记录</string>
+    <string name="settings">设置</string>
+    <string name="nmea_debug">NMEA调试</string>
+    <string name="nmea_hide">隐藏NMEA</string>
+    <string name="nmea_data">NMEA接收数据:</string>
+    <string name="hz_active">25Hz已激活 (%dHz)</string>
+    <string name="hz_manual">手动切换25Hz (当前%dHz)</string>
+
+    <string name="stage_connect">连接</string>
+    <string name="stage_satellite">卫星</string>
+    <string name="stage_25hz">25Hz</string>
+    <string name="stage_ready">Ready</string>
+
+    <string name="fix_none">无</string>
+    <string name="fix_gps">GPS</string>
+    <string name="fix_dgps">DGPS</string>
+    <string name="fix_rtk">RTK</string>
+    <string name="fix_float">Float</string>
+
+    <string name="measure_title">0-%d km/h</string>
+    <string name="status_stop">请停车</string>
+    <string name="status_go">出发!</string>
+    <string name="status_measuring">测量中…</string>
+    <string name="status_done">完成!</string>
+    <string name="peak_speed">最高速度: %s km/h</string>
+    <string name="stop_measure">停止测量</string>
+    <string name="stop_long_press">长按停止</string>
+    <string name="go_back">返回</string>
+    <string name="retry">重新测量</string>
+    <string name="cancel">取消</string>
+
+    <string name="history_title">测量记录</string>
+    <string name="no_records">暂无测量记录</string>
+    <string name="delete_all">全部删除</string>
+    <string name="delete_all_confirm">确定删除所有测量记录？</string>
+    <string name="delete">删除</string>
+
+    <string name="target_speed">目标速度</string>
+    <string name="target_speed_desc">选择测量结束速度。达到该速度时自动完成测量。</string>
+    <string name="current_target">当前: 0-%d km/h 测量</string>
+    <string name="rollout_title">1英尺滚动校正</string>
+    <string name="rollout_desc">直线加速赛标准校正。开启后从结果中减去约0.3秒。</string>
+    <string name="rollout_active">1英尺滚动校正已启用: 结果减去0.3秒</string>
+    <string name="gps_info">GPS信息</string>
+    <string name="info_module">模块</string>
+    <string name="info_module_value">u-blox M9 (USB OTG)</string>
+    <string name="info_rate">更新频率</string>
+    <string name="info_rate_value">25Hz (40ms间隔)</string>
+    <string name="info_condition">测量启动条件</string>
+    <string name="info_condition_value">25Hz + 卫星8颗以上 + HDOP &lt; 3.0</string>
+    <string name="info_splits">分段记录</string>
+    <string name="info_splits_value">60 / 100 / 150 / 200 km/h</string>
+</resources>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Zero100</string>
+
+    <string name="gps_module">u-blox M9</string>
+    <string name="km_h">km/h</string>
+    <string name="seconds">秒</string>
+    <string name="hdop">HDOP</string>
+    <string name="fix">Fix</string>
+    <string name="satellites">衛星</string>
+    <string name="satellites_count">%d基</string>
+    <string name="best_record">ベスト記録</string>
+    <string name="gps_connect">GPS接続</string>
+    <string name="connected">接続済み</string>
+    <string name="connecting">接続中…</string>
+    <string name="error">エラー</string>
+    <string name="start_measure">測定開始</string>
+    <string name="stabilizing">安定化中</string>
+    <string name="measure_history">測定履歴</string>
+    <string name="settings">設定</string>
+    <string name="nmea_debug">NMEAデバッグ</string>
+    <string name="nmea_hide">NMEA非表示</string>
+    <string name="nmea_data">NMEA受信データ:</string>
+    <string name="hz_active">25Hz有効 (%dHz)</string>
+    <string name="hz_manual">25Hz手動切替 (現在%dHz)</string>
+
+    <string name="stage_connect">接続</string>
+    <string name="stage_satellite">衛星</string>
+    <string name="stage_25hz">25Hz</string>
+    <string name="stage_ready">Ready</string>
+
+    <string name="fix_none">なし</string>
+    <string name="fix_gps">GPS</string>
+    <string name="fix_dgps">DGPS</string>
+    <string name="fix_rtk">RTK</string>
+    <string name="fix_float">Float</string>
+
+    <string name="measure_title">0-%d km/h</string>
+    <string name="status_stop">停車してください</string>
+    <string name="status_go">スタート!</string>
+    <string name="status_measuring">測定中…</string>
+    <string name="status_done">完了!</string>
+    <string name="peak_speed">最高速度: %s km/h</string>
+    <string name="stop_measure">測定終了</string>
+    <string name="stop_long_press">長押しで終了</string>
+    <string name="go_back">戻る</string>
+    <string name="retry">再測定</string>
+    <string name="cancel">キャンセル</string>
+
+    <string name="history_title">測定履歴</string>
+    <string name="no_records">まだ記録がありません</string>
+    <string name="delete_all">全削除</string>
+    <string name="delete_all_confirm">すべての測定記録を削除しますか？</string>
+    <string name="delete">削除</string>
+
+    <string name="target_speed">目標速度</string>
+    <string name="target_speed_desc">測定終了速度を選択します。その速度に達すると自動的に測定が完了します。</string>
+    <string name="current_target">現在: 0-%d km/h 測定</string>
+    <string name="rollout_title">1フィートロールアウト補正</string>
+    <string name="rollout_desc">ドラッグレース基準の補正。オンにすると約0.3秒を差し引きます。</string>
+    <string name="rollout_active">1フィートロールアウト補正有効: 結果から0.3秒差引</string>
+    <string name="gps_info">GPS情報</string>
+    <string name="info_module">モジュール</string>
+    <string name="info_module_value">u-blox M9 (USB OTG)</string>
+    <string name="info_rate">更新レート</string>
+    <string name="info_rate_value">25Hz (40ms間隔)</string>
+    <string name="info_condition">測定開始条件</string>
+    <string name="info_condition_value">25Hz + 衛星8基以上 + HDOP &lt; 3.0</string>
+    <string name="info_splits">区間記録</string>
+    <string name="info_splits_value">60 / 100 / 150 / 200 km/h</string>
+</resources>
