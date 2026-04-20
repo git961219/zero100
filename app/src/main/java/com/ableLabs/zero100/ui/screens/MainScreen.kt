@@ -634,7 +634,7 @@ private fun RecordCard(displayTime: String, targetSpeed: Int) {
                 Text(
                     displayTime,
                     style = MaterialTheme.typography.headlineSmall.copy(
-                        fontFamily = FontFamily.Monospace
+                        fontFamily = Rajdhani
                     ),
                     fontWeight = FontWeight.Bold,
                     color = c.info

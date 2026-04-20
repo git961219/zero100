@@ -176,7 +176,7 @@ private fun CompareRecordCard(
                 color = color,
                 fontWeight = FontWeight.Bold,
                 fontSize = 24.sp,
-                fontFamily = FontFamily.Monospace
+                fontFamily = Rajdhani
             )
             Text(
                 "0-${record.targetSpeed.toInt()} km/h",
@@ -323,21 +323,21 @@ private fun CompareSplitsTable(
                         color = if (isMajor) c.textPrimary else c.textSecondary,
                         fontSize = if (isMajor) 13.sp else 12.sp,
                         fontWeight = if (isMajor) FontWeight.Bold else FontWeight.Normal,
-                        fontFamily = FontFamily.Monospace,
+                        fontFamily = Rajdhani,
                         modifier = Modifier.weight(1f)
                     )
                     Text(
                         s1?.let { String.format("%.2f", it.seconds) } ?: "-",
                         color = c.info,
                         fontSize = if (isMajor) 13.sp else 12.sp,
-                        fontFamily = FontFamily.Monospace,
+                        fontFamily = Rajdhani,
                         modifier = Modifier.weight(1f)
                     )
                     Text(
                         s2?.let { String.format("%.2f", it.seconds) } ?: "-",
                         color = c.warning,
                         fontSize = if (isMajor) 13.sp else 12.sp,
-                        fontFamily = FontFamily.Monospace,
+                        fontFamily = Rajdhani,
                         modifier = Modifier.weight(1f)
                     )
 
@@ -360,7 +360,7 @@ private fun CompareSplitsTable(
                         color = diffColor,
                         fontSize = if (isMajor) 13.sp else 12.sp,
                         fontWeight = if (isMajor) FontWeight.Bold else FontWeight.Normal,
-                        fontFamily = FontFamily.Monospace,
+                        fontFamily = Rajdhani,
                         modifier = Modifier.weight(1f)
                     )
                 }

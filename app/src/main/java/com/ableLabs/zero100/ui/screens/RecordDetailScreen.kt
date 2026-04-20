@@ -223,7 +223,7 @@ fun RecordDetailScreen(
                     },
                     color = c.textSecondary,
                     fontSize = 14.sp,
-                    fontFamily = FontFamily.Monospace
+                    fontFamily = Rajdhani
                 )
 
                 // 감속 기록: 제동거리 강조
@@ -237,7 +237,7 @@ fun RecordDetailScreen(
                             color = c.danger,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace
+                            fontFamily = Rajdhani
                         )
                     }
                 }
@@ -258,7 +258,7 @@ fun RecordDetailScreen(
                         stringResource(R.string.distance_label) + " $distText$accText",
                         color = c.textSecondary,
                         fontSize = 14.sp,
-                        fontFamily = FontFamily.Monospace
+                        fontFamily = Rajdhani
                     )
                 }
                 Text(
@@ -379,21 +379,21 @@ fun RecordDetailScreen(
                                 Text(stringResource(R.string.combined_accel), color = c.textSecondary, fontSize = 12.sp)
                                 Text(
                                     String.format("%.2fs", rec.accelMs / 1000.0),
-                                    color = c.info, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace
+                                    color = c.info, fontWeight = FontWeight.Bold, fontFamily = Rajdhani
                                 )
                             }
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(stringResource(R.string.combined_decel), color = c.textSecondary, fontSize = 12.sp)
                                 Text(
                                     String.format("%.2fs", rec.decelMs / 1000.0),
-                                    color = c.danger, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace
+                                    color = c.danger, fontWeight = FontWeight.Bold, fontFamily = Rajdhani
                                 )
                             }
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(stringResource(R.string.combined_total), color = c.textSecondary, fontSize = 12.sp)
                                 Text(
                                     String.format("%.2fs", rec.elapsedSeconds),
-                                    color = c.accent, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace
+                                    color = c.accent, fontWeight = FontWeight.Bold, fontFamily = Rajdhani
                                 )
                             }
                         }
@@ -799,7 +799,7 @@ private fun DetailSplitTimesWithToggle(splits: List<SplitEntry>, isDecel: Boolea
                             color = if (split.isMajor) c.textPrimary else c.textSecondary,
                             fontSize = if (split.isMajor) 14.sp else 12.sp,
                             fontWeight = if (split.isMajor) FontWeight.Bold else FontWeight.Normal,
-                            fontFamily = FontFamily.Monospace
+                            fontFamily = Rajdhani
                         )
                         Row {
                             Text(
@@ -811,7 +811,7 @@ private fun DetailSplitTimesWithToggle(splits: List<SplitEntry>, isDecel: Boolea
                                 },
                                 fontWeight = if (split.isMajor) FontWeight.Bold else FontWeight.Normal,
                                 fontSize = if (split.isMajor) 14.sp else 12.sp,
-                                fontFamily = FontFamily.Monospace
+                                fontFamily = Rajdhani
                             )
                             if (split.distanceM > 0) {
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -819,7 +819,7 @@ private fun DetailSplitTimesWithToggle(splits: List<SplitEntry>, isDecel: Boolea
                                     String.format("%.0fm", split.distanceM),
                                     color = c.textTertiary,
                                     fontSize = if (split.isMajor) 12.sp else 11.sp,
-                                    fontFamily = FontFamily.Monospace
+                                    fontFamily = Rajdhani
                                 )
                             }
                         }
@@ -881,7 +881,7 @@ private fun DetailDistanceCheckpoints(checkpoints: List<DistCheckEntry>) {
                             color = c.textSecondary,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace
+                            fontFamily = Rajdhani
                         )
                         Row {
                             Text(
@@ -889,14 +889,14 @@ private fun DetailDistanceCheckpoints(checkpoints: List<DistCheckEntry>) {
                                 color = c.info,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp,
-                                fontFamily = FontFamily.Monospace
+                                fontFamily = Rajdhani
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 String.format("%.0f km/h", cp.speedKmh),
                                 color = c.textTertiary,
                                 fontSize = 12.sp,
-                                fontFamily = FontFamily.Monospace
+                                fontFamily = Rajdhani
                             )
                         }
                     }

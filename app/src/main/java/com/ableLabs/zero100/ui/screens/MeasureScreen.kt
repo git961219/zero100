@@ -185,7 +185,7 @@ fun MeasureScreen(
                     isDecel -> "${decelStartSpeed}-0 km/h"
                     else -> "0-${targetSpeed} km/h"
                 },
-                style = MaterialTheme.typography.titleMedium.copy(fontFamily = FontFamily.Monospace),
+                style = MaterialTheme.typography.titleMedium.copy(fontFamily = Rajdhani),
                 color = when {
                     isCombined -> c.accent
                     isDecel -> c.danger
@@ -245,7 +245,7 @@ fun MeasureScreen(
                                             color = c.danger,
                                             fontSize = 16.sp,
                                             fontWeight = FontWeight.Bold,
-                                            fontFamily = FontFamily.Monospace
+                                            fontFamily = Rajdhani
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                     }
@@ -255,7 +255,7 @@ fun MeasureScreen(
                                     stringResource(R.string.peak_speed_label, String.format("%.1f", r.peakSpeed)),
                                     color = c.textSecondary,
                                     fontSize = 14.sp,
-                                    fontFamily = FontFamily.Monospace
+                                    fontFamily = Rajdhani
                                 )
 
                                 // Peak G 표시
@@ -265,7 +265,7 @@ fun MeasureScreen(
                                         stringResource(R.string.peak_g_label, String.format("%.2f", r.peakG)),
                                         color = c.warning,
                                         fontSize = 14.sp,
-                                        fontFamily = FontFamily.Monospace
+                                        fontFamily = Rajdhani
                                     )
                                 }
 
@@ -282,7 +282,7 @@ fun MeasureScreen(
                                                 String.format("%.2fs", r.accelMs / 1000.0),
                                                 color = c.info,
                                                 fontWeight = FontWeight.Bold,
-                                                fontFamily = FontFamily.Monospace
+                                                fontFamily = Rajdhani
                                             )
                                             if (r.accelDistance > 0) {
                                                 Text(
@@ -298,7 +298,7 @@ fun MeasureScreen(
                                                 String.format("%.2fs", r.decelMs / 1000.0),
                                                 color = c.danger,
                                                 fontWeight = FontWeight.Bold,
-                                                fontFamily = FontFamily.Monospace
+                                                fontFamily = Rajdhani
                                             )
                                             if (r.decelDistance > 0) {
                                                 Text(
@@ -314,7 +314,7 @@ fun MeasureScreen(
                                                 String.format("%.2fs", r.elapsedSeconds),
                                                 color = c.accent,
                                                 fontWeight = FontWeight.Bold,
-                                                fontFamily = FontFamily.Monospace
+                                                fontFamily = Rajdhani
                                             )
                                         }
                                     }
@@ -334,7 +334,7 @@ fun MeasureScreen(
                                         stringResource(R.string.distance_label) + " $distText$accText",
                                         color = c.textSecondary,
                                         fontSize = 14.sp,
-                                        fontFamily = FontFamily.Monospace
+                                        fontFamily = Rajdhani
                                     )
                                 }
                             }
@@ -459,7 +459,7 @@ fun MeasureScreen(
                     text = String.format("%.0f", currentSpeed),
                     fontSize = 40.sp,
                     fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = Rajdhani,
                     color = c.textPrimary.copy(alpha = 0.7f)
                 )
                 Text("km/h", color = c.textSecondary, fontSize = 14.sp)
@@ -491,7 +491,7 @@ fun MeasureScreen(
                     text = String.format("%.0f", currentSpeed),
                     fontSize = 40.sp,
                     fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = Rajdhani,
                     color = c.textPrimary
                 )
                 Text("km/h", color = c.textSecondary, fontSize = 14.sp)
@@ -776,7 +776,7 @@ private fun DistanceCheckpointsDisplay(checkpoints: List<DistanceCheckpoint>) {
                             color = c.textSecondary,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace
+                            fontFamily = Rajdhani
                         )
                         Row {
                             Text(
@@ -784,14 +784,14 @@ private fun DistanceCheckpointsDisplay(checkpoints: List<DistanceCheckpoint>) {
                                 color = c.info,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp,
-                                fontFamily = FontFamily.Monospace
+                                fontFamily = Rajdhani
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 String.format("%.0f km/h", cp.speedKmh),
                                 color = c.textTertiary,
                                 fontSize = 12.sp,
-                                fontFamily = FontFamily.Monospace
+                                fontFamily = Rajdhani
                             )
                         }
                     }
@@ -825,7 +825,7 @@ private fun SplitTimeRow(split: SplitTime, index: Int, isDecel: Boolean = false)
                 color = if (split.isMajor) c.textPrimary else c.textSecondary,
                 fontSize = if (split.isMajor) 14.sp else 12.sp,
                 fontWeight = if (split.isMajor) FontWeight.Bold else FontWeight.Normal,
-                fontFamily = FontFamily.Monospace
+                fontFamily = Rajdhani
             )
             Row {
                 Text(
@@ -837,7 +837,7 @@ private fun SplitTimeRow(split: SplitTime, index: Int, isDecel: Boolean = false)
                     },
                     fontWeight = if (split.isMajor) FontWeight.Bold else FontWeight.Normal,
                     fontSize = if (split.isMajor) 14.sp else 12.sp,
-                    fontFamily = FontFamily.Monospace
+                    fontFamily = Rajdhani
                 )
                 if (split.distanceM > 0) {
                     Spacer(modifier = Modifier.width(8.dp))
@@ -845,7 +845,7 @@ private fun SplitTimeRow(split: SplitTime, index: Int, isDecel: Boolean = false)
                         String.format("%.0fm", split.distanceM),
                         color = c.textTertiary,
                         fontSize = if (split.isMajor) 12.sp else 11.sp,
-                        fontFamily = FontFamily.Monospace
+                        fontFamily = Rajdhani
                     )
                 }
             }
@@ -883,14 +883,14 @@ private fun GforceDisplay(gforceData: GforceData) {
             String.format("%.2fG", gforceData.longitudinal),
             color = if (gforceData.longitudinal >= 0) c.info else c.danger,
             fontSize = 14.sp,
-            fontFamily = FontFamily.Monospace,
+            fontFamily = Rajdhani,
             fontWeight = FontWeight.Medium
         )
         Text(
             String.format("L%.2fG", kotlin.math.abs(gforceData.lateral)),
             color = c.textSecondary,
             fontSize = 12.sp,
-            fontFamily = FontFamily.Monospace
+            fontFamily = Rajdhani
         )
     }
 }

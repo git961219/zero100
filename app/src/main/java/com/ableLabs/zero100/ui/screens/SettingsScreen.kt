@@ -50,6 +50,7 @@ fun SettingsScreen(
 
     var showAddVehicleDialog by remember { mutableStateOf(false) }
     var editingVehicle by remember { mutableStateOf<Vehicle?>(null) }
+    var pendingLangCode by remember { mutableStateOf<String?>(null) }
 
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("zero100_settings", Context.MODE_PRIVATE) }
@@ -326,7 +327,8 @@ fun SettingsScreen(
             if (oneFootRollout) {
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = c.accent.copy(alpha = 0.15f)
+                    color = c.accent.copy(alpha = 0.15f),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
                         stringResource(R.string.rollout_active),
@@ -474,18 +476,9 @@ fun SettingsScreen(
                     FilterChip(
                         selected = isSelected,
                         onClick = {
-                            selectedLang = option.code
-                            prefs.edit().putString("app_language", option.code).apply()
-                            scope.launch {
-                                snackbarHostState.currentSnackbarData?.dismiss()
-                                snackbarHostState.showSnackbar(msgLangChanged)
+                            if (option.code != selectedLang) {
+                                pendingLangCode = option.code
                             }
-                            val localeList = if (option.code.isEmpty()) {
-                                LocaleListCompat.getEmptyLocaleList()
-                            } else {
-                                LocaleListCompat.forLanguageTags(option.code)
-                            }
-                            AppCompatDelegate.setApplicationLocales(localeList)
                         },
                         label = {
                             Text(

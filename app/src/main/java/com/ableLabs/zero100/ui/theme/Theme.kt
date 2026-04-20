@@ -8,11 +8,13 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import androidx.compose.ui.platform.LocalView
+import com.ableLabs.zero100.R
 
 // ── Zero100 커스텀 컬러 시스템 ──
 // 브랜드: 레드 (#E53935)
@@ -109,22 +111,32 @@ private val LightColorScheme = lightColorScheme(
     onSurfaceVariant = Color(0xFF757575),
 )
 
+// ── Rajdhani 폰트 패밀리 (계측기/기술 느낌) ──
+val Rajdhani = FontFamily(
+    Font(R.font.rajdhani_light, FontWeight.Light),
+    Font(R.font.rajdhani_regular, FontWeight.Normal),
+    Font(R.font.rajdhani_medium, FontWeight.Medium),
+    Font(R.font.rajdhani_semibold, FontWeight.SemiBold),
+    Font(R.font.rajdhani_bold, FontWeight.Bold),
+)
+
 // ── 계측기 스타일 텍스트 ──
 val SpeedDisplayStyle = TextStyle(
-    fontFamily = FontFamily.Monospace,
+    fontFamily = Rajdhani,
     fontSize = 120.sp,
     fontWeight = FontWeight.Bold,
     letterSpacing = (-3).sp
 )
 
 val SpeedUnitStyle = TextStyle(
+    fontFamily = Rajdhani,
     fontSize = 24.sp,
     fontWeight = FontWeight.Normal,
     color = TextSecondary
 )
 
 val TimerDisplayStyle = TextStyle(
-    fontFamily = FontFamily.Monospace,
+    fontFamily = Rajdhani,
     fontSize = 80.sp,
     fontWeight = FontWeight.Bold,
     letterSpacing = (-2).sp
