@@ -415,9 +415,6 @@ fun RecordDetailScreen(
                     selectedTabIndex = selectedTab,
                     containerColor = c.card,
                     contentColor = c.textPrimary,
-                    indicator = {
-                        TabRowDefaults.SecondaryIndicator(color = c.textPrimary)
-                    },
                     modifier = Modifier.clip(RoundedCornerShape(12.dp))
                 ) {
                     tabTitles.forEachIndexed { index, title ->
