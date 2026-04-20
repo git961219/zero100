@@ -377,16 +377,24 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         _updateInfo.value = null
     }
 
+    // 수동 체크 후 결과: true=최신, false=확인 전, null=에러
+    private val _updateCheckResult = MutableStateFlow<Boolean?>(null)
+    val updateCheckResult: StateFlow<Boolean?> = _updateCheckResult
+
     fun checkForUpdateManual() {
         viewModelScope.launch {
             _updateChecking.value = true
+            _updateCheckResult.value = null
             val info = updateChecker.checkForUpdate()
             _updateChecking.value = false
             if (info?.isNewer == true) {
                 _updateInfo.value = info
-            } else {
-                // 최신 버전이면 null 유지 (UI에서 "최신 버전입니다" 표시)
+                _updateCheckResult.value = false
+            } else if (info != null) {
                 _updateInfo.value = null
+                _updateCheckResult.value = true // 최신 버전
+            } else {
+                _updateCheckResult.value = null // 확인 실패
             }
         }
     }

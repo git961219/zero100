@@ -44,6 +44,7 @@ fun SettingsScreen(
     val updateInfo by viewModel.updateInfo.collectAsState()
     val updateProgress by viewModel.updateProgress.collectAsState()
     val updateChecking by viewModel.updateChecking.collectAsState()
+    val updateCheckResult by viewModel.updateCheckResult.collectAsState()
     val vehicles by viewModel.vehicles.collectAsState()
     val selectedVehicleId by viewModel.selectedVehicleId.collectAsState()
 
@@ -591,6 +592,35 @@ fun SettingsScreen(
                             stringResource(R.string.update_check),
                             color = c.textPrimary
                         )
+                    }
+                }
+
+                // 확인 결과 메시지
+                if (updateCheckResult == true) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = c.success.copy(alpha = 0.15f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Filled.CheckCircle,
+                                contentDescription = null,
+                                tint = c.success,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                stringResource(R.string.update_latest),
+                                color = c.success,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
                 }
             }
