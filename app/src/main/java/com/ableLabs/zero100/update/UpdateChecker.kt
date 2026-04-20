@@ -2,6 +2,7 @@ package com.ableLabs.zero100.update
 
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -20,34 +21,33 @@ data class UpdateInfo(
 class UpdateChecker(private val context: Context) {
 
     companion object {
-        // GitHub API -- 실제 레포 만들면 여기만 수정
         const val GITHUB_OWNER = "git961219"
         const val GITHUB_REPO = "zero100"
         const val API_URL = "https://api.github.com/repos/$GITHUB_OWNER/$GITHUB_REPO/releases/latest"
+        private const val TAG = "UpdateChecker"
     }
 
-    /**
-     * GitHub Releases에서 최신 버전 확인
-     */
     suspend fun checkForUpdate(): UpdateInfo? = withContext(Dispatchers.IO) {
         try {
-            val url = URL(API_URL)
-            val conn = url.openConnection() as HttpURLConnection
-            conn.requestMethod = "GET"
+            val conn = openConnection(URL(API_URL))
             conn.setRequestProperty("Accept", "application/vnd.github.v3+json")
-            conn.connectTimeout = 10000
-            conn.readTimeout = 10000
 
-            if (conn.responseCode != 200) return@withContext null
+            val code = conn.responseCode
+            Log.d(TAG, "API response code: $code")
+
+            if (code != 200) {
+                Log.w(TAG, "API failed: $code")
+                return@withContext null
+            }
 
             val response = conn.inputStream.bufferedReader().readText()
+            conn.disconnect()
             val json = JSONObject(response)
 
-            val tagName = json.getString("tag_name") // "v1.0.1"
+            val tagName = json.getString("tag_name")
             val versionName = tagName.removePrefix("v")
             val releaseNotes = json.optString("body", "")
 
-            // APK 다운로드 URL 찾기
             val assets = json.getJSONArray("assets")
             var downloadUrl = ""
             for (i in 0 until assets.length()) {
@@ -58,31 +58,33 @@ class UpdateChecker(private val context: Context) {
                 }
             }
 
-            if (downloadUrl.isEmpty()) return@withContext null
+            if (downloadUrl.isEmpty()) {
+                Log.w(TAG, "No APK asset found")
+                return@withContext null
+            }
 
-            // 현재 버전과 비교
             val currentVersion = getCurrentVersion()
             val isNewer = compareVersions(versionName, currentVersion) > 0
+            Log.d(TAG, "Current: $currentVersion, Latest: $versionName, isNewer: $isNewer")
 
             UpdateInfo(versionName, downloadUrl, releaseNotes, isNewer)
         } catch (e: Exception) {
+            Log.e(TAG, "Check failed: ${e.message}", e)
             null
         }
     }
 
-    /**
-     * APK 다운로드 및 설치 인텐트
-     */
     suspend fun downloadAndInstall(
         downloadUrl: String,
         onProgress: (Int) -> Unit
     ): Boolean = withContext(Dispatchers.IO) {
         try {
-            val url = URL(downloadUrl)
-            val conn = url.openConnection() as HttpURLConnection
-            conn.connect()
+            Log.d(TAG, "Downloading: $downloadUrl")
+            // GitHub redirect를 수동으로 따라가기
+            val conn = openConnection(URL(downloadUrl))
 
             val totalSize = conn.contentLength
+            Log.d(TAG, "Download size: $totalSize")
             val apkFile = File(context.cacheDir, "zero100_update.apk")
 
             conn.inputStream.use { input ->
@@ -99,8 +101,10 @@ class UpdateChecker(private val context: Context) {
                     }
                 }
             }
+            conn.disconnect()
 
-            // 설치 인텐트
+            Log.d(TAG, "Download complete: ${apkFile.length()} bytes")
+
             val uri = FileProvider.getUriForFile(
                 context,
                 "${context.packageName}.fileprovider",
@@ -114,6 +118,7 @@ class UpdateChecker(private val context: Context) {
             context.startActivity(installIntent)
             true
         } catch (e: Exception) {
+            Log.e(TAG, "Download failed: ${e.message}", e)
             false
         }
     }
@@ -127,8 +132,37 @@ class UpdateChecker(private val context: Context) {
     }
 
     /**
-     * 버전 비교: "1.0.1" vs "1.0.0" -> 1 (더 새로움)
+     * HTTP 연결 열기 — redirect를 수동으로 따라감 (GitHub 302 대응)
      */
+    private fun openConnection(url: URL): HttpURLConnection {
+        var currentUrl = url
+        var redirectCount = 0
+        while (redirectCount < 5) {
+            val conn = currentUrl.openConnection() as HttpURLConnection
+            conn.instanceFollowRedirects = false
+            conn.connectTimeout = 15000
+            conn.readTimeout = 30000
+            conn.connect()
+
+            val code = conn.responseCode
+            if (code in 301..303 || code == 307 || code == 308) {
+                val location = conn.getHeaderField("Location")
+                conn.disconnect()
+                if (location == null) break
+                currentUrl = URL(location)
+                redirectCount++
+                Log.d(TAG, "Redirect $redirectCount -> $location")
+            } else {
+                return conn
+            }
+        }
+        // fallback: 기본 방식
+        val conn = url.openConnection() as HttpURLConnection
+        conn.connectTimeout = 15000
+        conn.readTimeout = 30000
+        return conn
+    }
+
     private fun compareVersions(v1: String, v2: String): Int {
         val parts1 = v1.split(".").map { it.toIntOrNull() ?: 0 }
         val parts2 = v2.split(".").map { it.toIntOrNull() ?: 0 }

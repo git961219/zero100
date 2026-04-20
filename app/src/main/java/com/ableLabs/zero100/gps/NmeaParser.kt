@@ -1,7 +1,7 @@
 package com.ableLabs.zero100.gps
 
 /**
- * NMEA 문장 파싱 — RMC, VTG, GGA에서 속도/위치/위성정보 추출
+ * NMEA 문장 파싱 — RMC, VTG에서 속도, GGA에서 위성정보 추출
  */
 data class GpsData(
     val speedKmh: Double = 0.0,
@@ -19,10 +19,14 @@ object NmeaParser {
     private var lastSatellites: Int = 0
     private var lastFixQuality: Int = 0
     private var lastHdop: Double = 99.9
+    private var lastLatitude: Double = 0.0
+    private var lastLongitude: Double = 0.0
+    private var lastSpeedKmh: Double = 0.0
 
     /**
      * 한 줄의 NMEA 문장을 파싱하여 GpsData 반환.
-     * 지원: $GNRMC, $GPRMC, $GNVTG, $GPVTG, $GNGGA, $GPGGA
+     * RMC/VTG: 속도 데이터 → GpsData 반환 (엔진에 전달됨)
+     * GGA: 위성/HDOP 업데이트만 → null 반환 (속도 0으로 덮어쓰기 방지)
      */
     fun parse(sentence: String): GpsData? {
         if (!validateChecksum(sentence)) return null
@@ -34,14 +38,14 @@ object NmeaParser {
         return when {
             type.endsWith("RMC") -> parseRmc(parts)
             type.endsWith("VTG") -> parseVtg(parts)
-            type.endsWith("GGA") -> parseGga(parts)
+            type.endsWith("GGA") -> { parseGga(parts); null } // 위성 정보만 업데이트, emit 안 함
+            type.endsWith("GSV") -> { parseGsv(parts); null }  // 위성 상세, emit 안 함
             else -> null
         }
     }
 
     /**
-     * $xxRMC — 추천 최소 특정 위치/속도
-     * 필드: time, status, lat, N/S, lon, E/W, speedKnots, course, date, ...
+     * $xxRMC — 속도 + 위치 (주요 속도 소스)
      */
     private fun parseRmc(parts: List<String>): GpsData? {
         if (parts.size < 10) return null
@@ -53,10 +57,16 @@ object NmeaParser {
         val speedKnots = parts[7].toDoubleOrNull() ?: 0.0
         val speedKmh = speedKnots * 1.852
 
+        if (isValid) {
+            lastSpeedKmh = speedKmh
+            if (lat != 0.0) lastLatitude = lat
+            if (lon != 0.0) lastLongitude = lon
+        }
+
         return GpsData(
             speedKmh = speedKmh,
-            latitude = lat,
-            longitude = lon,
+            latitude = if (lat != 0.0) lat else lastLatitude,
+            longitude = if (lon != 0.0) lon else lastLongitude,
             satellites = lastSatellites,
             fixQuality = lastFixQuality,
             hdop = lastHdop,
@@ -65,17 +75,22 @@ object NmeaParser {
     }
 
     /**
-     * $xxVTG — 대지 속도 (Ground Speed)
-     * 필드: courseTrue, T, courseMag, M, speedKnots, N, speedKmh, K, mode
+     * $xxVTG — 대지 속도 (보조 속도 소스, RMC보다 정확할 수 있음)
      */
     private fun parseVtg(parts: List<String>): GpsData? {
         if (parts.size < 8) return null
         val speedKmh = parts[7].toDoubleOrNull() ?: return null
         val mode = if (parts.size > 9) parts[9] else ""
-        val isValid = mode != "N" // N = No fix
+        val isValid = mode != "N"
+
+        if (isValid) {
+            lastSpeedKmh = speedKmh
+        }
 
         return GpsData(
             speedKmh = speedKmh,
+            latitude = lastLatitude,
+            longitude = lastLongitude,
             satellites = lastSatellites,
             fixQuality = lastFixQuality,
             hdop = lastHdop,
@@ -84,28 +99,27 @@ object NmeaParser {
     }
 
     /**
-     * $xxGGA — 위성/Fix 품질 정보 업데이트용
+     * $xxGGA — 위성/Fix/HDOP 정보만 업데이트 (속도 emit 안 함)
      */
-    private fun parseGga(parts: List<String>): GpsData? {
-        if (parts.size < 10) return null
+    private fun parseGga(parts: List<String>) {
+        if (parts.size < 10) return
         lastFixQuality = parts[6].toIntOrNull() ?: 0
         lastSatellites = parts[7].toIntOrNull() ?: 0
         lastHdop = parts[8].toDoubleOrNull() ?: 99.9
 
         val lat = parseLatitude(parts[2], parts[3])
         val lon = parseLongitude(parts[4], parts[5])
-
-        return GpsData(
-            latitude = lat,
-            longitude = lon,
-            satellites = lastSatellites,
-            fixQuality = lastFixQuality,
-            hdop = lastHdop,
-            isValid = lastFixQuality > 0
-        )
+        if (lat != 0.0) lastLatitude = lat
+        if (lon != 0.0) lastLongitude = lon
     }
 
-    // NMEA 위도: ddmm.mmmm → decimal degrees
+    /**
+     * $xxGSV — 위성 상세 정보 (파싱만, emit 안 함)
+     */
+    private fun parseGsv(parts: List<String>) {
+        // GSV에서 총 위성 수 업데이트 가능하지만 GGA가 더 정확
+    }
+
     private fun parseLatitude(raw: String, dir: String): Double {
         if (raw.length < 4) return 0.0
         val deg = raw.substring(0, 2).toDoubleOrNull() ?: return 0.0
@@ -114,7 +128,6 @@ object NmeaParser {
         return if (dir == "S") -result else result
     }
 
-    // NMEA 경도: dddmm.mmmm → decimal degrees
     private fun parseLongitude(raw: String, dir: String): Double {
         if (raw.length < 5) return 0.0
         val deg = raw.substring(0, 3).toDoubleOrNull() ?: return 0.0
@@ -123,12 +136,11 @@ object NmeaParser {
         return if (dir == "W") -result else result
     }
 
-    // NMEA checksum 검증: XOR of all chars between $ and *
     private fun validateChecksum(sentence: String): Boolean {
         val starIdx = sentence.indexOf('*')
         if (starIdx < 0 || starIdx + 3 > sentence.length) return false
 
-        val data = sentence.substring(1, starIdx) // $ 다음부터 * 전까지
+        val data = sentence.substring(1, starIdx)
         val expected = sentence.substring(starIdx + 1, starIdx + 3)
 
         var checksum = 0
