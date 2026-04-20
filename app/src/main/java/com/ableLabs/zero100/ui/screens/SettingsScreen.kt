@@ -567,58 +567,61 @@ fun SettingsScreen(
                 }
             }
 
-            // 수동 업데이트 확인 버튼
+            // 수동 업데이트 확인 버튼 (결과를 버튼 자체에 표시)
             if (updateInfo == null) {
-                Button(
-                    onClick = { viewModel.checkForUpdateManual() },
-                    enabled = !updateChecking,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = c.card),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    if (updateChecking) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            color = c.textSecondary,
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            stringResource(R.string.update_checking),
-                            color = c.textSecondary
-                        )
-                    } else {
-                        Text(
-                            stringResource(R.string.update_check),
-                            color = c.textPrimary
-                        )
+                // 3초 후 결과 리셋
+                LaunchedEffect(updateCheckResult) {
+                    if (updateCheckResult.isNotEmpty()) {
+                        kotlinx.coroutines.delay(3000)
+                        viewModel.clearUpdateCheckResult()
                     }
                 }
 
-                // 확인 결과 메시지
-                if (updateCheckResult.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    val (icon, msg, color) = when {
-                        updateCheckResult == "latest" -> Triple(Icons.Filled.CheckCircle, stringResource(R.string.update_latest), c.success)
-                        updateCheckResult == "error" -> Triple(Icons.Filled.ErrorOutline, "업데이트 확인 실패. 네트워크를 확인해주세요.", c.warning)
-                        updateCheckResult.startsWith("update:") -> Triple(Icons.Filled.NewReleases, "새 버전 ${updateCheckResult.removePrefix("update:")} 사용 가능!", c.accent)
-                        else -> null
-                    } ?: Triple(Icons.Filled.Info, "", c.textSecondary)
+                val btnColor = when {
+                    updateChecking -> c.card
+                    updateCheckResult == "latest" -> c.success
+                    updateCheckResult == "error" -> c.warning
+                    updateCheckResult.startsWith("update:") -> c.accent
+                    else -> c.card
+                }
 
-                    if (msg.isNotEmpty()) {
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = color.copy(alpha = 0.15f),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(msg, color = color, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                            }
+                Button(
+                    onClick = { viewModel.checkForUpdateManual() },
+                    enabled = !updateChecking && updateCheckResult.isEmpty(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = btnColor,
+                        disabledContainerColor = btnColor
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    when {
+                        updateChecking -> {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                color = c.textPrimary,
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.update_checking), color = c.textPrimary)
+                        }
+                        updateCheckResult == "latest" -> {
+                            Icon(Icons.Filled.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.update_latest), color = c.textPrimary)
+                        }
+                        updateCheckResult == "error" -> {
+                            Icon(Icons.Filled.ErrorOutline, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("확인 실패", color = c.textPrimary)
+                        }
+                        updateCheckResult.startsWith("update:") -> {
+                            Icon(Icons.Filled.NewReleases, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("v${updateCheckResult.removePrefix("update:")} 업데이트 가능!", color = c.textPrimary)
+                        }
+                        else -> {
+                            Text(stringResource(R.string.update_check), color = c.textPrimary)
                         }
                     }
                 }

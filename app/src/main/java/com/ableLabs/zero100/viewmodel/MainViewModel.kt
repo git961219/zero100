@@ -388,6 +388,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val _updateCheckResult = MutableStateFlow("")
     val updateCheckResult: StateFlow<String> = _updateCheckResult
 
+    fun clearUpdateCheckResult() {
+        _updateCheckResult.value = ""
+    }
+
     fun checkForUpdateManual() {
         viewModelScope.launch {
             _updateChecking.value = true
