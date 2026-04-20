@@ -1,6 +1,9 @@
 package com.ableLabs.zero100.ui.screens
 
+import android.graphics.Canvas
 import android.graphics.Color as AndroidColor
+import android.graphics.Paint
+import android.graphics.drawable.Drawable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -110,7 +113,7 @@ fun MapResultView(
                     addPoint(GeoPoint(pt1.lat, pt1.lon))
                     addPoint(GeoPoint(pt2.lat, pt2.lon))
                     outlinePaint.strokeWidth = 8f
-                    outlinePaint.color = speedToColor(pt2.speedKmh)
+                    outlinePaint.color = speedToColor(pt2.speedKmh, isDark)
                     setOnClickListener { _, _, _ -> false }
                 }
                 map.overlays.add(segment)
@@ -123,9 +126,11 @@ fun MapResultView(
 
                 if (closest.lat == 0.0 && closest.lon == 0.0) continue
 
+                val markerColor = speedToColor(split.speedKmh, isDark)
                 val marker = Marker(map).apply {
                     position = GeoPoint(closest.lat, closest.lon)
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                    icon = CirclePinDrawable(markerColor, if (isDark) AndroidColor.WHITE else AndroidColor.BLACK)
                     title = "${split.speedKmh.toInt()}km/h"
                     snippet = "%.2f초".format(split.elapsedSeconds)
                 }
@@ -145,13 +150,58 @@ fun MapResultView(
     )
 }
 
-private fun speedToColor(speedKmh: Double): Int {
-    return when {
-        speedKmh < 30  -> AndroidColor.parseColor("#2196F3")
-        speedKmh < 60  -> AndroidColor.parseColor("#00BCD4")
-        speedKmh < 100 -> AndroidColor.parseColor("#4CAF50")
-        speedKmh < 150 -> AndroidColor.parseColor("#FFEB3B")
-        speedKmh < 200 -> AndroidColor.parseColor("#FF9800")
-        else           -> AndroidColor.parseColor("#F44336")
+private fun speedToColor(speedKmh: Double, isDark: Boolean = true): Int {
+    return if (isDark) {
+        when {
+            speedKmh < 30  -> AndroidColor.parseColor("#2196F3")
+            speedKmh < 60  -> AndroidColor.parseColor("#00BCD4")
+            speedKmh < 100 -> AndroidColor.parseColor("#4CAF50")
+            speedKmh < 150 -> AndroidColor.parseColor("#FFEB3B")
+            speedKmh < 200 -> AndroidColor.parseColor("#FF9800")
+            else           -> AndroidColor.parseColor("#F44336")
+        }
+    } else {
+        // 라이트 모드: 밝은 배경에서 보이도록 채도/명도 조정
+        when {
+            speedKmh < 30  -> AndroidColor.parseColor("#1565C0") // 진한 파랑
+            speedKmh < 60  -> AndroidColor.parseColor("#00838F") // 진한 시안
+            speedKmh < 100 -> AndroidColor.parseColor("#2E7D32") // 진한 초록
+            speedKmh < 150 -> AndroidColor.parseColor("#F57F17") // 진한 노랑→앰버
+            speedKmh < 200 -> AndroidColor.parseColor("#E65100") // 진한 주황
+            else           -> AndroidColor.parseColor("#C62828") // 진한 빨강
+        }
     }
+}
+
+/**
+ * 손가락 없는 원형 핀 마커
+ */
+private class CirclePinDrawable(
+    private val fillColor: Int,
+    private val strokeColor: Int
+) : Drawable() {
+    private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = fillColor
+        style = Paint.Style.FILL
+    }
+    private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = strokeColor
+        style = Paint.Style.STROKE
+        strokeWidth = 3f
+    }
+
+    override fun draw(canvas: Canvas) {
+        val cx = bounds.exactCenterX()
+        val cy = bounds.exactCenterY()
+        val radius = bounds.width().coerceAtMost(bounds.height()) / 2f - 2f
+        canvas.drawCircle(cx, cy, radius, fillPaint)
+        canvas.drawCircle(cx, cy, radius, strokePaint)
+    }
+
+    override fun getIntrinsicWidth() = 28
+    override fun getIntrinsicHeight() = 28
+    override fun setAlpha(alpha: Int) { fillPaint.alpha = alpha }
+    override fun setColorFilter(colorFilter: android.graphics.ColorFilter?) { fillPaint.colorFilter = colorFilter }
+    @Suppress("DEPRECATION")
+    override fun getOpacity() = android.graphics.PixelFormat.TRANSLUCENT
 }

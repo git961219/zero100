@@ -134,7 +134,8 @@ fun Zero100App(
                 viewModel = viewModel,
                 onNavigateToMeasure = { navController.navigate("measure") },
                 onNavigateToHistory = { navController.navigate("history") },
-                onNavigateToSettings = { navController.navigate("settings") }
+                onNavigateToSettings = { navController.navigate("settings") },
+                onNavigateToDetail = { recordId -> navController.navigate("detail/$recordId") }
             )
         }
         composable("measure") {

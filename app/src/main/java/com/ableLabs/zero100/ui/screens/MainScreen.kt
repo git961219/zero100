@@ -4,9 +4,12 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -25,7 +28,10 @@ import com.ableLabs.zero100.R
 import com.ableLabs.zero100.gps.ConnectionState
 import com.ableLabs.zero100.ui.theme.*
 import com.ableLabs.zero100.measurement.MeasureMode
+import com.ableLabs.zero100.data.MeasurementRecord
 import com.ableLabs.zero100.update.UpdateInfo
+import java.text.SimpleDateFormat
+import java.util.Locale
 import com.ableLabs.zero100.viewmodel.GpsSource
 import com.ableLabs.zero100.viewmodel.GpsStage
 import com.ableLabs.zero100.viewmodel.MainViewModel
@@ -35,7 +41,8 @@ fun MainScreen(
     viewModel: MainViewModel,
     onNavigateToMeasure: () -> Unit,
     onNavigateToHistory: () -> Unit,
-    onNavigateToSettings: () -> Unit
+    onNavigateToSettings: () -> Unit,
+    onNavigateToDetail: (Long) -> Unit = {}
 ) {
     val c = LocalZero100Colors.current
     val connectionState by viewModel.connectionState.collectAsState()
@@ -43,6 +50,10 @@ fun MainScreen(
     val currentSpeed by viewModel.currentSpeed.collectAsState()
     val rawRate by viewModel.rawRate.collectAsState()
     val bestRecord by viewModel.bestRecord.collectAsState()
+    val best100 by viewModel.best100.collectAsState()
+    val best200 by viewModel.best200.collectAsState()
+    val recentRecords by viewModel.recentRecords.collectAsState()
+    val totalCount by viewModel.totalCount.collectAsState()
     val gpsStage by viewModel.gpsStage.collectAsState()
     val targetSpeed by viewModel.targetSpeedSetting.collectAsState()
     val gpsSource by viewModel.gpsSource.collectAsState()
@@ -86,41 +97,75 @@ fun MainScreen(
 
         GpsReadyMessage(gpsStage)
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         if (hasAnyGps) {
-            SpeedDisplay(currentSpeed)
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                SpeedDisplay(currentSpeed)
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-            if (isGpsConnected) {
-                GpsQualityCard(latestGps.hdop, latestGps.satellites, latestGps.fixQuality)
-            }
-
-            if (gpsSource == GpsSource.INTERNAL && !isGpsConnected) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = c.warning.copy(alpha = 0.1f),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        stringResource(R.string.external_gps_hint),
-                        modifier = Modifier.padding(12.dp),
-                        color = c.warning,
-                        fontSize = 12.sp,
-                        textAlign = TextAlign.Center
-                    )
+                if (isGpsConnected) {
+                    GpsQualityCard(latestGps.hdop, latestGps.satellites, latestGps.fixQuality)
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
+
+                if (gpsSource == GpsSource.INTERNAL && !isGpsConnected) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = c.warning.copy(alpha = 0.1f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            stringResource(R.string.external_gps_hint),
+                            modifier = Modifier.padding(12.dp),
+                            color = c.warning,
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
+                // ── BEST RECORDS ──
+                BestRecordsRow(best100, best200, bestRecord)
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // ── RECENT RUNS ──
+                if (recentRecords.isNotEmpty()) {
+                    RecentRunsCard(recentRecords, totalCount, onNavigateToHistory, onNavigateToDetail)
+                } else {
+                    // 빈 상태: 기록 없음
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = c.card),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(Icons.Filled.Speed, contentDescription = null, tint = c.textTertiary, modifier = Modifier.size(40.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                stringResource(R.string.no_records),
+                                color = c.textTertiary,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
             }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            bestRecord?.let { record ->
-                RecordCard(record.displayTime, targetSpeed)
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
         } else {
             Spacer(modifier = Modifier.height(48.dp))
 
@@ -611,41 +656,132 @@ private fun UpdateBanner(
 }
 
 @Composable
-private fun RecordCard(displayTime: String, targetSpeed: Int) {
+private fun BestRecordsRow(
+    best100: MeasurementRecord?,
+    best200: MeasurementRecord?,
+    bestOverall: MeasurementRecord?
+) {
     val c = LocalZero100Colors.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = c.card),
         shape = RoundedCornerShape(16.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                Icons.Filled.EmojiEvents,
-                contentDescription = null,
-                tint = c.warning,
-                modifier = Modifier.size(32.dp)
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
-                Text(stringResource(R.string.best_record_label), style = MaterialTheme.typography.labelMedium, color = c.textSecondary)
-                Text(
-                    displayTime,
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontFamily = Rajdhani
-                    ),
-                    fontWeight = FontWeight.Bold,
-                    color = c.info
-                )
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.EmojiEvents, contentDescription = null, tint = c.warning, modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("BEST RECORDS", color = c.textSecondary, fontSize = 13.sp, fontWeight = FontWeight.Bold, fontFamily = Rajdhani)
             }
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                BestRecordItem("0-100", best100, c)
+                BestRecordItem("0-200", best200, c)
+                BestRecordItem("BEST", bestOverall, c)
+            }
+        }
+    }
+}
+
+@Composable
+private fun BestRecordItem(label: String, record: MeasurementRecord?, c: Zero100Colors) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(label, color = c.textTertiary, fontSize = 11.sp, fontFamily = Rajdhani, fontWeight = FontWeight.Medium)
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            if (record != null) String.format("%.2fs", record.elapsedSeconds) else "---",
+            color = if (record != null) c.info else c.textTertiary,
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold,
+            fontFamily = Rajdhani
+        )
+        if (record != null) {
+            val dateFormat = remember { SimpleDateFormat("MM.dd", Locale.getDefault()) }
             Text(
-                "0-${targetSpeed}",
-                color = c.textSecondary,
-                fontSize = 12.sp
+                dateFormat.format(record.timestamp),
+                color = c.textTertiary,
+                fontSize = 10.sp
             )
+        }
+    }
+}
+
+@Composable
+private fun RecentRunsCard(
+    records: List<MeasurementRecord>,
+    totalCount: Int,
+    onSeeAll: () -> Unit,
+    onDetail: (Long) -> Unit
+) {
+    val c = LocalZero100Colors.current
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = c.card),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.History, contentDescription = null, tint = c.textSecondary, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("RECENT RUNS", color = c.textSecondary, fontSize = 13.sp, fontWeight = FontWeight.Bold, fontFamily = Rajdhani)
+                }
+                if (totalCount > records.size) {
+                    TextButton(onClick = onSeeAll, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
+                        Text("${totalCount}건 >", color = c.textTertiary, fontSize = 12.sp)
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            val dateFormat = remember { SimpleDateFormat("MM.dd HH:mm", Locale.getDefault()) }
+            records.forEachIndexed { idx, rec ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onDetail(rec.id) }
+                        .padding(vertical = 6.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "#${totalCount - idx}",
+                            color = c.textTertiary,
+                            fontSize = 12.sp,
+                            fontFamily = Rajdhani,
+                            modifier = Modifier.width(36.dp)
+                        )
+                        val modeLabel = when (rec.measureMode) {
+                            "DECELERATION" -> "${rec.targetSpeed.toInt()}-0"
+                            "COMBINED" -> "0-${rec.targetSpeed.toInt()}-0"
+                            else -> "0-${rec.targetSpeed.toInt()}"
+                        }
+                        Text(modeLabel, color = c.textSecondary, fontSize = 12.sp, fontFamily = Rajdhani)
+                    }
+                    Text(
+                        String.format("%.2fs", rec.elapsedSeconds),
+                        color = c.info,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        fontFamily = Rajdhani
+                    )
+                    Text(
+                        dateFormat.format(rec.timestamp),
+                        color = c.textTertiary,
+                        fontSize = 11.sp
+                    )
+                }
+                if (idx < records.size - 1) {
+                    HorizontalDivider(color = c.surface, thickness = 0.5.dp)
+                }
+            }
         }
     }
 }

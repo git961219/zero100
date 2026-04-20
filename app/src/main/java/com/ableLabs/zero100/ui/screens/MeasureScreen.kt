@@ -3,6 +3,8 @@ package com.ableLabs.zero100.ui.screens
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -134,6 +136,17 @@ fun MeasureScreen(
             }
         }
     }
+
+    // 화면 방향: 측정 화면에서 가로/세로 자유 회전 허용
+    DisposableEffect(Unit) {
+        val activity = context as? Activity
+        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
+        onDispose {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        }
+    }
+
+    val isLandscape = context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     DisposableEffect(Unit) {
         val originalBrightness = setScreenBrightnessMax(context)
@@ -405,92 +418,146 @@ fun MeasureScreen(
             }
 
             MeasureState.MEASURING -> {
-                Text(
-                    text = String.format("%.2f", displayElapsed / 1000.0),
-                    style = TimerDisplayStyle,
-                    color = when {
-                        isCombined && combinedPhase == CombinedPhase.DECEL -> c.danger
-                        isCombined -> c.info
-                        isDecel -> c.danger
-                        else -> c.info
-                    }
-                )
-                Text(stringResource(R.string.seconds), style = SpeedUnitStyle.copy(color = c.textSecondary))
+                val timerColor = when {
+                    isCombined && combinedPhase == CombinedPhase.DECEL -> c.danger
+                    isCombined -> c.info
+                    isDecel -> c.danger
+                    else -> c.info
+                }
+                val majorSplits = liveSplits.filter { it.isMajor }
 
-                // 복합 모드: 현재 단계 표시
-                if (isCombined) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (combinedPhase == CombinedPhase.ACCEL) c.info.copy(alpha = 0.15f) else c.danger.copy(alpha = 0.15f)
+                if (isLandscape) {
+                    // ── 가로 모드: 좌(타이머+속도) | 우(구간+프로그레스) ──
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Text(
-                            if (combinedPhase == CombinedPhase.ACCEL) stringResource(R.string.combined_phase_accel)
-                            else stringResource(R.string.combined_phase_decel),
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                            color = if (combinedPhase == CombinedPhase.ACCEL) c.info else c.danger,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
+                        // 좌: 타이머 + 속도
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = String.format("%.2f", displayElapsed / 1000.0),
+                                style = TimerDisplayStyle,
+                                color = timerColor
+                            )
+                            Text(stringResource(R.string.seconds), style = SpeedUnitStyle.copy(color = c.textSecondary))
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = String.format("%.0f", currentSpeed),
+                                fontSize = 36.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = Rajdhani,
+                                color = c.textPrimary.copy(alpha = 0.7f)
+                            )
+                            Text("km/h", color = c.textSecondary, fontSize = 14.sp)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            GforceDisplay(gforceData)
+                        }
+                        // 우: 구간 + 프로그레스
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            if (isDecel) {
+                                SpeedProgressBar(
+                                    currentSpeed = decelStartSpeed.toDouble() - currentSpeed,
+                                    targetSpeed = decelStartSpeed.toDouble(),
+                                    modifier = Modifier.fillMaxWidth().height(8.dp),
+                                    barColor = c.danger
+                                )
+                            } else {
+                                SpeedProgressBar(
+                                    currentSpeed = currentSpeed,
+                                    targetSpeed = targetSpeed.toDouble(),
+                                    modifier = Modifier.fillMaxWidth().height(8.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                            if (majorSplits.isNotEmpty()) {
+                                AnimatedSplitTimesDisplay(majorSplits)
+                            }
+                        }
+                    }
+                } else {
+                    // ── 세로 모드: 기존 레이아웃 ──
+                    Text(
+                        text = String.format("%.2f", displayElapsed / 1000.0),
+                        style = TimerDisplayStyle,
+                        color = timerColor
+                    )
+                    Text(stringResource(R.string.seconds), style = SpeedUnitStyle.copy(color = c.textSecondary))
+
+                    if (isCombined) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (combinedPhase == CombinedPhase.ACCEL) c.info.copy(alpha = 0.15f) else c.danger.copy(alpha = 0.15f)
+                        ) {
+                            Text(
+                                if (combinedPhase == CombinedPhase.ACCEL) stringResource(R.string.combined_phase_accel)
+                                else stringResource(R.string.combined_phase_decel),
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                color = if (combinedPhase == CombinedPhase.ACCEL) c.info else c.danger,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    if (isDecel) {
+                        SpeedProgressBar(
+                            currentSpeed = decelStartSpeed.toDouble() - currentSpeed,
+                            targetSpeed = decelStartSpeed.toDouble(),
+                            modifier = Modifier.fillMaxWidth().height(8.dp),
+                            barColor = c.danger
+                        )
+                    } else {
+                        SpeedProgressBar(
+                            currentSpeed = currentSpeed,
+                            targetSpeed = targetSpeed.toDouble(),
+                            modifier = Modifier.fillMaxWidth().height(8.dp)
                         )
                     }
-                }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
-                if (isDecel) {
-                    // 감속: 역방향 프로그레스바 (현재속도 -> 0)
-                    SpeedProgressBar(
-                        currentSpeed = decelStartSpeed.toDouble() - currentSpeed,
-                        targetSpeed = decelStartSpeed.toDouble(),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(8.dp),
-                        barColor = c.danger
+                    Text(
+                        text = String.format("%.0f", currentSpeed),
+                        fontSize = 40.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = Rajdhani,
+                        color = c.textPrimary.copy(alpha = 0.7f)
                     )
-                } else {
-                    SpeedProgressBar(
-                        currentSpeed = currentSpeed,
-                        targetSpeed = targetSpeed.toDouble(),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(8.dp)
-                    )
+                    Text("km/h", color = c.textSecondary, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    GforceDisplay(gforceData)
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    if (majorSplits.isNotEmpty()) {
+                        AnimatedSplitTimesDisplay(majorSplits)
+                    }
+
+                    Spacer(modifier = Modifier.weight(1f))
                 }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                Text(
-                    text = String.format("%.0f", currentSpeed),
-                    fontSize = 40.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = Rajdhani,
-                    color = c.textPrimary.copy(alpha = 0.7f)
-                )
-                Text("km/h", color = c.textSecondary, fontSize = 14.sp)
-
-                // G-force 실시간 표시
-                Spacer(modifier = Modifier.height(4.dp))
-                GforceDisplay(gforceData)
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                if (liveSplits.isNotEmpty()) {
-                    // 측정 중에는 주요 구간(60/100/150/200)만 기본 표시
-                    val majorSplits = liveSplits.filter { it.isMajor }
-                    AnimatedSplitTimesDisplay(majorSplits)
-                }
-
-                Spacer(modifier = Modifier.weight(1f))
             }
 
             else -> {
+                // GPS Quality Check + 대기 화면
                 Text(
                     text = "0.00",
                     style = TimerDisplayStyle,
                     color = c.textTertiary
                 )
                 Text(stringResource(R.string.seconds), style = SpeedUnitStyle.copy(color = c.textSecondary))
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = String.format("%.0f", currentSpeed),
                     fontSize = 40.sp,
@@ -499,6 +566,33 @@ fun MeasureScreen(
                     color = c.textPrimary
                 )
                 Text("km/h", color = c.textSecondary, fontSize = 14.sp)
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // GPS 품질 카드
+                val latestGps by viewModel.latestGps.collectAsState()
+                val gpsStage by viewModel.gpsStage.collectAsState()
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = c.card),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("GPS QUALITY", color = c.textSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold, fontFamily = Rajdhani)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        GpsQualityRow(stringResource(R.string.satellites), "${latestGps.satellites}", latestGps.satellites >= 8, c)
+                        GpsQualityRow(stringResource(R.string.accuracy), String.format("%.1f", latestGps.hdop), latestGps.hdop < 2.5, c)
+                        GpsQualityRow(stringResource(R.string.reception),
+                            when (latestGps.fixQuality) {
+                                2 -> "DGPS"
+                                4 -> "RTK"
+                                1 -> "GPS"
+                                else -> "---"
+                            },
+                            latestGps.fixQuality > 0, c
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.weight(1f))
             }
@@ -1028,6 +1122,35 @@ private fun SpeedGraph(
                 val y = h - (split.speedKmh.toFloat() / maxSpeed * (h - padding * 2)) - padding
                 drawCircle(c.warning, radius = 5.dp.toPx(), center = Offset(x, y))
             }
+        }
+    }
+}
+
+@Composable
+private fun GpsQualityRow(label: String, value: String, isGood: Boolean, c: Zero100Colors) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, color = c.textSecondary, fontSize = 13.sp)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                value,
+                color = if (isGood) c.success else c.warning,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                fontFamily = Rajdhani
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                if (isGood) "OK" else "--",
+                color = if (isGood) c.success else c.textTertiary,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }

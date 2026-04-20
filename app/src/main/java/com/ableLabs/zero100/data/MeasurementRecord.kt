@@ -44,6 +44,18 @@ interface MeasurementDao {
     @Query("SELECT * FROM measurements ORDER BY elapsedMs ASC LIMIT 1")
     suspend fun getBest(): MeasurementRecord?
 
+    @Query("SELECT * FROM measurements ORDER BY timestamp DESC LIMIT :limit")
+    suspend fun getRecent(limit: Int = 5): List<MeasurementRecord>
+
+    @Query("SELECT * FROM measurements WHERE targetSpeed = :target AND measureMode = 'ACCELERATION' ORDER BY elapsedMs ASC LIMIT 1")
+    suspend fun getBestByTarget(target: Double): MeasurementRecord?
+
+    @Query("SELECT COUNT(*) FROM measurements")
+    suspend fun getCount(): Int
+
+    @Query("SELECT AVG(elapsedMs) FROM measurements WHERE targetSpeed = :target AND measureMode = 'ACCELERATION'")
+    suspend fun getAverageMs(target: Double): Double?
+
     @Insert
     suspend fun insert(record: MeasurementRecord): Long
 

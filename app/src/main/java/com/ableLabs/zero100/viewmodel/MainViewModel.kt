@@ -123,6 +123,18 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val _bestRecord = MutableStateFlow<MeasurementRecord?>(null)
     val bestRecord: StateFlow<MeasurementRecord?> = _bestRecord
 
+    private val _recentRecords = MutableStateFlow<List<MeasurementRecord>>(emptyList())
+    val recentRecords: StateFlow<List<MeasurementRecord>> = _recentRecords
+
+    // 모드별 베스트 (0-100, 0-200)
+    private val _best100 = MutableStateFlow<MeasurementRecord?>(null)
+    val best100: StateFlow<MeasurementRecord?> = _best100
+    private val _best200 = MutableStateFlow<MeasurementRecord?>(null)
+    val best200: StateFlow<MeasurementRecord?> = _best200
+
+    private val _totalCount = MutableStateFlow(0)
+    val totalCount: StateFlow<Int> = _totalCount
+
     // --- 실시간 경과 시간 ---
     private val _elapsedMs = MutableStateFlow(0L)
     val elapsedMs: StateFlow<Long> = _elapsedMs
@@ -497,6 +509,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _records.value = db.measurementDao().getAll()
             _bestRecord.value = db.measurementDao().getBest()
+            _recentRecords.value = db.measurementDao().getRecent(5)
+            _best100.value = db.measurementDao().getBestByTarget(100.0)
+            _best200.value = db.measurementDao().getBestByTarget(200.0)
+            _totalCount.value = db.measurementDao().getCount()
         }
     }
 
