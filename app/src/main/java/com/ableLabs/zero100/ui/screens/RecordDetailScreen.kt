@@ -23,6 +23,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -648,6 +651,14 @@ private fun DetailSplitGraph(
     modifier: Modifier = Modifier
 ) {
     val c = LocalZero100Colors.current
+    val textMeasurer = rememberTextMeasurer()
+    val labelStyle = TextStyle(
+        fontFamily = Rajdhani,
+        fontSize = 11.sp,
+        fontWeight = FontWeight.Medium,
+        color = c.textTertiary
+    )
+
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = c.card),
@@ -658,33 +669,64 @@ private fun DetailSplitGraph(
                 .fillMaxSize()
                 .padding(12.dp)
         ) {
-            val w = size.width
-            val h = size.height
-            val padding = 4.dp.toPx()
-
             if (splits.isEmpty()) return@Canvas
+
+            val leftMargin = 36.dp.toPx()
+            val bottomMargin = 20.dp.toPx()
+            val w = size.width - leftMargin
+            val h = size.height - bottomMargin
+            val padding = 4.dp.toPx()
 
             val maxTime = splits.maxOf { it.ms }.toFloat()
             val maxSpeed = splits.maxOf { it.speed }.toFloat()
 
-            for (split in splits) {
-                val y = h - (split.speed.toFloat() / maxSpeed * (h - padding * 2)) - padding
-                drawLine(c.textTertiary.copy(alpha = 0.3f), Offset(0f, y), Offset(w, y), 1f)
+            // Y축 속도 라벨 + 가이드라인
+            val ySteps = listOf(0.0, maxSpeed * 0.25, maxSpeed * 0.5, maxSpeed * 0.75, maxSpeed.toDouble())
+            for (speedVal in ySteps) {
+                val y = h - (speedVal.toFloat() / maxSpeed * (h - padding * 2)) - padding
+                drawLine(c.textTertiary.copy(alpha = 0.15f), Offset(leftMargin, y), Offset(leftMargin + w, y), 1f)
+                val label = "${speedVal.toInt()}"
+                val textResult = textMeasurer.measure(label, labelStyle)
+                drawText(textResult, topLeft = Offset(leftMargin - textResult.size.width - 4.dp.toPx(), y - textResult.size.height / 2f))
             }
 
-            val path = Path()
-            path.moveTo(padding, h - padding)
-
+            // 구간 가이드라인
             for (split in splits) {
-                val x = (split.ms.toFloat() / maxTime) * (w - padding * 2) + padding
+                val y = h - (split.speed.toFloat() / maxSpeed * (h - padding * 2)) - padding
+                drawLine(c.textTertiary.copy(alpha = 0.3f), Offset(leftMargin, y), Offset(leftMargin + w, y), 1f)
+            }
+
+            // X축 시간 라벨
+            val maxTimeSec = maxTime / 1000f
+            val xStepSec = when {
+                maxTimeSec <= 5f -> 1f
+                maxTimeSec <= 15f -> 2f
+                maxTimeSec <= 30f -> 5f
+                else -> 10f
+            }
+            var t = 0f
+            while (t <= maxTimeSec) {
+                val x = leftMargin + (t * 1000f / maxTime) * (w - padding * 2) + padding
+                val label = "${t.toInt()}s"
+                val textResult = textMeasurer.measure(label, labelStyle)
+                drawText(textResult, topLeft = Offset(x - textResult.size.width / 2f, h + 4.dp.toPx()))
+                drawLine(c.textTertiary.copy(alpha = 0.15f), Offset(x, padding), Offset(x, h), 1f)
+                t += xStepSec
+            }
+
+            // 속도 곡선
+            val path = Path()
+            path.moveTo(leftMargin + padding, h - padding)
+            for (split in splits) {
+                val x = leftMargin + (split.ms.toFloat() / maxTime) * (w - padding * 2) + padding
                 val y = h - (split.speed.toFloat() / maxSpeed * (h - padding * 2)) - padding
                 path.lineTo(x, y)
             }
-
             drawPath(path, c.info, style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round))
 
+            // 구간 마커
             for (split in splits) {
-                val x = (split.ms.toFloat() / maxTime) * (w - padding * 2) + padding
+                val x = leftMargin + (split.ms.toFloat() / maxTime) * (w - padding * 2) + padding
                 val y = h - (split.speed.toFloat() / maxSpeed * (h - padding * 2)) - padding
                 drawCircle(c.warning, radius = 5.dp.toPx(), center = Offset(x, y))
             }

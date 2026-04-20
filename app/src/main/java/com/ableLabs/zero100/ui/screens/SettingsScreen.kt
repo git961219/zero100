@@ -649,6 +649,36 @@ fun SettingsScreen(
             }
         )
     }
+
+    // 언어 변경 확인 다이얼로그
+    pendingLangCode?.let { code ->
+        val langLabel = languageOptions.find { it.code == code }?.label ?: code
+        AlertDialog(
+            onDismissRequest = { pendingLangCode = null },
+            title = { Text(stringResource(R.string.language)) },
+            text = { Text("$langLabel\n${stringResource(R.string.snack_lang_changed)}") },
+            confirmButton = {
+                TextButton(onClick = {
+                    prefs.edit().putString("app_language", code).apply()
+                    selectedLang = code
+                    pendingLangCode = null
+                    val localeList = if (code.isEmpty()) {
+                        LocaleListCompat.getEmptyLocaleList()
+                    } else {
+                        LocaleListCompat.forLanguageTags(code)
+                    }
+                    AppCompatDelegate.setApplicationLocales(localeList)
+                }) {
+                    Text(stringResource(R.string.save))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingLangCode = null }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
 }
 
 @Composable
