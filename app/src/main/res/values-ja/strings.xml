@@ -68,4 +68,114 @@
     <string name="info_condition_value">25Hz + 衛星8基以上 + HDOP &lt; 3.0</string>
     <string name="info_splits">区間記録</string>
     <string name="info_splits_value">60 / 100 / 150 / 200 km/h</string>
+
+    <string name="disconnected">未接続</string>
+    <string name="accuracy">精度</string>
+    <string name="accuracy_best">最高</string>
+    <string name="accuracy_good">良好</string>
+    <string name="accuracy_normal">普通</string>
+    <string name="accuracy_low">低い</string>
+    <string name="accuracy_bad">悪い</string>
+    <string name="reception">受信</string>
+    <string name="reception_precise">精密</string>
+    <string name="reception_good">良好</string>
+    <string name="reception_ultra">超精密</string>
+    <string name="reception_correcting">補正中</string>
+    <string name="reception_none">なし</string>
+    <string name="gps_waiting">GPS信号待機中...</string>
+    <string name="satellite_waiting">衛星受信待機中...</string>
+    <string name="satellite_receiving">衛星受信中、しばらくお待ちください</string>
+    <string name="upgrading_mode">高速モードに切替中...</string>
+    <string name="signal_stabilizing">信号安定化中...</string>
+    <string name="ready_high_performance">測定準備完了！（高性能モード）</string>
+    <string name="ready_internal_gps">測定準備完了（内蔵GPS）</string>
+    <string name="external_gps_hint">外部USB GPS接続で25Hz高精度測定が可能です</string>
+    <string name="gps_signal_waiting">GPS信号待機中...\nUSB外部GPSを接続すると高性能モードが使えます</string>
+    <string name="preparing">準備中...</string>
+    <string name="history">履歴</string>
+    <string name="external_gps_label">外部GPS (%dHz)</string>
+    <string name="internal_gps">内蔵GPS</string>
+    <string name="best_record_label">ベスト記録</string>
+
+    <string name="back">戻る</string>
+    <string name="tab_splits">区間</string>
+    <string name="tab_graph">グラフ</string>
+    <string name="tab_map">地図</string>
+    <string name="share_result">結果を共有</string>
+    <string name="measure_done">測定完了</string>
+    <string name="long_press_stop">長押しで終了</string>
+    <string name="peak_speed_label">最高速度: %1$s km/h</string>
+    <string name="split_time_format">%1$.2f秒</string>
+
+    <string name="language">言語</string>
+    <string name="language_desc">アプリの表示言語を選択します。変更するとアプリが再起動します。</string>
+    <string name="lang_system">システムデフォルト</string>
+    <string name="current_source">現在のソース</string>
+    <string name="external_ublox">外部u-blox M9 (%dHz)</string>
+    <string name="internal_gps_1hz">内蔵GPS (~2Hz)</string>
+    <string name="mode_label">モード</string>
+    <string name="mode_high">高性能モード</string>
+    <string name="mode_basic">基本モード</string>
+    <string name="start_condition">測定開始条件</string>
+    <string name="start_condition_external">25Hz + 衛星8基以上 + HDOP &lt; 3.0</string>
+    <string name="start_condition_internal">GPS信号受信</string>
+    <string name="external_gps_promo">USB OTGで外部GPSモジュール(u-blox M9)を接続すると25Hz高精度測定が可能です</string>
+    <string name="record_summary">0-%1$d km/h  |  最高 %2$s km/h</string>
+
+    <string name="onboarding_title_1">GPSモジュール接続</string>
+    <string name="onboarding_desc_1">USB OTGケーブルで\nGPSモジュール(u-blox M9)を\nスマートフォンに接続してください。</string>
+    <string name="onboarding_title_2">衛星受信待機</string>
+    <string name="onboarding_desc_2">屋外の開けた場所で\n衛星受信をお待ちください。\n8基以上で測定可能です。</string>
+    <string name="start_app">始める</string>
+    <string name="next">次へ</string>
+    <string name="skip">スキップ</string>
+
+    <!-- RecordDetailScreen -->
+    <string name="detail_title">記録詳細</string>
+    <string name="record_not_found">記録が見つかりません</string>
+    <string name="rollout_badge">1ft</string>
+    <string name="no_split_data">区間データなし</string>
+    <string name="no_graph_data">グラフデータなし</string>
+    <string name="delete_record_confirm">この記録を削除しますか？</string>
+
+    <!-- 距離表示 -->
+    <string name="distance_label">走行距離:</string>
+    <string name="distance_accuracy">精度 %1$s%%</string>
+
+    <!-- テーマ設定 -->
+    <string name="settings_theme">テーマ</string>
+    <string name="settings_theme_desc">アプリのテーマを選択します。</string>
+    <string name="theme_dark">ダーク</string>
+    <string name="theme_light">ライト</string>
+    <string name="theme_system">システム</string>
+
+    <!-- ブレーキテスト -->
+    <string name="mode_accel">加速</string>
+    <string name="mode_decel">減速</string>
+    <string name="start_braking_test">制動テスト</string>
+    <string name="status_decel_idle">目標速度まで加速してください</string>
+    <string name="status_decel_ready">ブレーキを踏んでください！</string>
+    <string name="status_decel_measuring">制動中…</string>
+    <string name="braking_distance_label">制動距離: %1$s m</string>
+    <string name="record_summary_decel">%1$d-0 km/h  |  最高 %2$s km/h</string>
+    <string name="decel_start_speed">減速開始速度</string>
+    <string name="decel_start_speed_desc">制動テスト開始速度を選択します。この速度以上でブレーキを踏むと測定が開始されます。</string>
+    <string name="current_decel_target">現在: %d-0 km/h 制動測定</string>
+    <string name="snack_decel_changed">減速開始速度が%1$dkm/hに変更されました</string>
+
+    <!-- 設定Snackbar -->
+    <string name="snack_target_changed">目標速度が%1$dkm/hに変更されました</string>
+    <string name="snack_rollout_on">1フィートロールアウト補正が有効になりました</string>
+    <string name="snack_rollout_off">1フィートロールアウト補正が無効になりました</string>
+    <string name="snack_lang_changed">言語が変更されます。アプリが再起動します。</string>
+
+    <!-- OTAアップデート -->
+    <string name="update_available">新バージョン %s が利用可能です</string>
+    <string name="update_download">アップデート</string>
+    <string name="update_later">後で</string>
+    <string name="update_checking">アップデートを確認中...</string>
+    <string name="update_downloading">ダウンロード中... %d%%</string>
+    <string name="update_current_version">現在のバージョン</string>
+    <string name="update_check">アップデートを確認</string>
+    <string name="update_latest">最新バージョンです</string>
 </resources>

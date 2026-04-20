@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- A안: 스피드 게이지 -->
+
+    <!-- 게이지 외곽 호 (반원, 두꺼운 선) -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:fillColor="#00000000"
+        android:pathData="M24,64 A32,32 0,0,1 84,64"
+        android:strokeLineCap="round"/>
+
+    <!-- 게이지 눈금 (좌→우, 점점 빨개짐) -->
+    <!-- 좌측 눈금 (흰색) -->
+    <path android:strokeColor="#66BB6A" android:strokeWidth="2" android:fillColor="#00000000"
+        android:pathData="M28,56 L33,54" android:strokeLineCap="round"/>
+    <path android:strokeColor="#66BB6A" android:strokeWidth="2" android:fillColor="#00000000"
+        android:pathData="M30,46 L35,46" android:strokeLineCap="round"/>
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="2" android:fillColor="#00000000"
+        android:pathData="M36,38 L40,40" android:strokeLineCap="round"/>
+    <!-- 상단 눈금 -->
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="2" android:fillColor="#00000000"
+        android:pathData="M46,33 L48,38" android:strokeLineCap="round"/>
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="2" android:fillColor="#00000000"
+        android:pathData="M54,32 L54,37" android:strokeLineCap="round"/>
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="2" android:fillColor="#00000000"
+        android:pathData="M62,33 L60,38" android:strokeLineCap="round"/>
+    <!-- 우측 눈금 (빨간색 영역) -->
+    <path android:strokeColor="#E53935" android:strokeWidth="2" android:fillColor="#00000000"
+        android:pathData="M72,38 L68,40" android:strokeLineCap="round"/>
+    <path android:strokeColor="#E53935" android:strokeWidth="2" android:fillColor="#00000000"
+        android:pathData="M78,46 L73,46" android:strokeLineCap="round"/>
+    <path android:strokeColor="#E53935" android:strokeWidth="2" android:fillColor="#00000000"
+        android:pathData="M80,56 L75,54" android:strokeLineCap="round"/>
+
+    <!-- 바늘 (우상단 = 최고속 방향) — 빨간색 -->
+    <path
+        android:fillColor="#E53935"
+        android:pathData="M54,54 L53,52 L74,40 L75,42 L55,55Z"/>
+
+    <!-- 바늘 중심점 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,54m-4,0a4,4 0,1,1 8,0a4,4 0,1,1 -8,0"/>
+
+    <!-- "100" 텍스트 (하단 중앙) -->
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M42,74 L42,82 L44,82 L44,74Z"/>
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M47,80 L47,74 Q47,72 49.5,72 Q52,72 52,74 L52,80 Q52,82 49.5,82 Q47,82 47,80Z M49,74 L49,80 L50.5,80 L50.5,74Z"/>
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M55,80 L55,74 Q55,72 57.5,72 Q60,72 60,74 L60,80 Q60,82 57.5,82 Q55,82 55,80Z M57,74 L57,80 L58.5,80 L58.5,74Z"/>
+
+</vector>

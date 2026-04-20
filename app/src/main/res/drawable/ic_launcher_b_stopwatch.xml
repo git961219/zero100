@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- B안: 레드 스톱워치 -->
+
+    <!-- 스톱워치 원형 외곽 -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:fillColor="#00000000"
+        android:pathData="M54,58m-28,0a28,28 0,1,1 56,0a28,28 0,1,1 -56,0"/>
+
+    <!-- 스톱워치 상단 버튼 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M51,28 L57,28 L57,33 L51,33Z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M52,25 L56,25 L56,28 L52,28Z"/>
+
+    <!-- 우측 작은 버튼 -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:fillColor="#00000000"
+        android:pathData="M76,40 L80,36"
+        android:strokeLineCap="round"/>
+
+    <!-- 바늘 (12시→2시 방향) -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:fillColor="#00000000"
+        android:pathData="M54,58 L66,42"
+        android:strokeLineCap="round"/>
+
+    <!-- 중심점 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,58m-3,0a3,3 0,1,1 6,0a3,3 0,1,1 -6,0"/>
+
+    <!-- "0" 큰 글자 (좌측) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M37,53 L37,63 Q37,66 40,66 L42,66 Q45,66 45,63 L45,53 Q45,50 42,50 L40,50 Q37,50 37,53Z M40,53 L40,63 L42,63 L42,53Z"/>
+
+    <!-- 화살표 → (중앙) -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:fillColor="#00000000"
+        android:pathData="M48,58 L52,58"
+        android:strokeLineCap="round"/>
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:fillColor="#00000000"
+        android:pathData="M50,55.5 L52.5,58 L50,60.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"/>
+
+    <!-- "100" 작은 글자 (우측) -->
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M57,54 L57,63 L59,63 L59,54Z"/>
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M61,61 L61,55 Q61,53 63,53 Q65,53 65,55 L65,61 Q65,63 63,63 Q61,63 61,61Z M62.5,55 L62.5,61 L63.5,61 L63.5,55Z"/>
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M67,61 L67,55 Q67,53 69,53 Q71,53 71,55 L71,61 Q71,63 69,63 Q67,63 67,61Z M68.5,55 L68.5,61 L69.5,61 L69.5,55Z"/>
+
+</vector>

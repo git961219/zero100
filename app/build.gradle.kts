@@ -47,6 +47,7 @@ dependencies {
     implementation(composeBom)
 
     implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("androidx.activity:activity-compose:1.9.3")
 
@@ -73,6 +74,12 @@ dependencies {
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+
+    // Google Play Services — 내장 GPS (FusedLocationProvider)
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+
+    // Map — osmdroid (오프라인 지도 표시)
+    implementation("org.osmdroid:osmdroid-android:6.1.20")
 
     // Debug
     debugImplementation("androidx.compose.ui:ui-tooling")

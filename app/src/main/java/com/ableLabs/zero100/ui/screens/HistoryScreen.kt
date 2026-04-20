@@ -1,7 +1,9 @@
 package com.ableLabs.zero100.ui.screens
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,41 +16,30 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ableLabs.zero100.R
 import com.ableLabs.zero100.data.MeasurementRecord
+import com.ableLabs.zero100.measurement.TrackPoint
 import com.ableLabs.zero100.ui.theme.*
 import com.ableLabs.zero100.viewmodel.MainViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
-/**
- * splitsJson 파싱: [{"speed":60,"ms":3210},{"speed":100,"ms":5230}]
- * 외부 라이브러리 없이 간단한 정규식으로 파싱
- */
-private data class SplitEntry(val speed: Int, val ms: Long) {
-    val seconds: Double get() = ms / 1000.0
-}
-
-private fun parseSplitsJson(json: String): List<SplitEntry> {
-    if (json.isBlank() || json == "[]") return emptyList()
-    val pattern = Regex("""\{"speed":(\d+),"ms":(\d+)\}""")
-    return pattern.findAll(json).map { match ->
-        SplitEntry(
-            speed = match.groupValues[1].toInt(),
-            ms = match.groupValues[2].toLong()
-        )
-    }.toList()
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryScreen(
     viewModel: MainViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onNavigateToDetail: (Long) -> Unit = {}
 ) {
+    val c = LocalZero100Colors.current
     val records by viewModel.records.collectAsState()
     val bestRecord by viewModel.bestRecord.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -56,34 +47,32 @@ fun HistoryScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(DarkBg)
+            .background(c.background)
             .padding(WindowInsets.systemBars.asPaddingValues())
     ) {
-        // 상단 바
         TopAppBar(
-            title = { Text("측정 기록") },
+            title = { Text(stringResource(R.string.history_title)) },
             navigationIcon = {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                 }
             },
             actions = {
                 if (records.isNotEmpty()) {
                     IconButton(onClick = { showDeleteDialog = true }) {
-                        Icon(Icons.Filled.DeleteSweep, contentDescription = "전체 삭제")
+                        Icon(Icons.Filled.DeleteSweep, contentDescription = stringResource(R.string.delete_all))
                     }
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = DarkBg,
-                titleContentColor = SpeedWhite,
-                navigationIconContentColor = SpeedWhite,
-                actionIconContentColor = SpeedGray
+                containerColor = c.background,
+                titleContentColor = c.textPrimary,
+                navigationIconContentColor = c.textPrimary,
+                actionIconContentColor = c.textSecondary
             )
         )
 
         if (records.isEmpty()) {
-            // 빈 상태
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -92,13 +81,13 @@ fun HistoryScreen(
                     Icon(
                         Icons.Filled.Timer,
                         contentDescription = null,
-                        tint = SpeedGray,
+                        tint = c.textSecondary,
                         modifier = Modifier.size(64.dp)
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        "아직 측정 기록이 없습니다",
-                        color = SpeedGray,
+                        stringResource(R.string.no_records),
+                        color = c.textSecondary,
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }
@@ -114,30 +103,31 @@ fun HistoryScreen(
                         record = record,
                         rank = index + 1,
                         isBest = isBest,
-                        onDelete = { viewModel.deleteRecord(record) }
+                        onDelete = { viewModel.deleteRecord(record) },
+                        onClick = { onNavigateToDetail(record.id) }
                     )
                 }
             }
         }
     }
 
-    // 전체 삭제 확인 다이얼로그
     if (showDeleteDialog) {
+        val c2 = LocalZero100Colors.current
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("전체 삭제") },
-            text = { Text("모든 측정 기록을 삭제하시겠습니까?") },
+            title = { Text(stringResource(R.string.delete_all)) },
+            text = { Text(stringResource(R.string.delete_all_confirm)) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.clearAllRecords()
                     showDeleteDialog = false
                 }) {
-                    Text("삭제", color = RacingRed)
+                    Text(stringResource(R.string.delete), color = c2.danger)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("취소")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -149,39 +139,39 @@ private fun RecordCard(
     record: MeasurementRecord,
     rank: Int,
     isBest: Boolean,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onClick: () -> Unit = {}
 ) {
+    val c = LocalZero100Colors.current
     val dateFormat = remember { SimpleDateFormat("yyyy.MM.dd HH:mm", Locale.KOREA) }
     var expanded by remember { mutableStateOf(false) }
     val splits = remember(record.splitsJson) { parseSplitsJson(record.splitsJson) }
+    val trackPoints = remember(record.trackPointsJson) { parseTrackPointsJson(record.trackPointsJson) }
     val hasSplits = splits.isNotEmpty()
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .then(
-                if (hasSplits) Modifier.clickable { expanded = !expanded }
-                else Modifier
-            ),
+            .clickable { onClick() },
         colors = CardDefaults.cardColors(
-            containerColor = if (isBest) Color(0xFF1B3A1B) else DarkCard
+            containerColor = if (isBest) c.success.copy(alpha = 0.1f) else c.card
         ),
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            val isDecelRecord = record.measureMode == "DECELERATION"
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // 순위
                 if (isBest) {
                     Icon(
                         Icons.Filled.EmojiEvents,
                         contentDescription = null,
-                        tint = RacingYellow,
+                        tint = c.warning,
                         modifier = Modifier.size(28.dp)
                     )
                 } else {
                     Text(
                         "#$rank",
-                        color = SpeedGray,
+                        color = c.textSecondary,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.width(28.dp)
                     )
@@ -189,49 +179,92 @@ private fun RecordCard(
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                // 시간 + 날짜
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        record.displayTime,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = if (isBest) RacingGreen else SpeedWhite
-                    )
-                    Text(
-                        "0-${record.targetSpeed.toInt()} km/h  |  최고 ${String.format("%.0f", record.peakSpeed)} km/h",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = SpeedGray
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            record.displayTime,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isBest) c.success else c.textPrimary
+                        )
+                        if (record.isRolloutApplied) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Surface(
+                                shape = RoundedCornerShape(4.dp),
+                                color = c.accent.copy(alpha = 0.15f)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.rollout_badge),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    color = c.accent,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                    if (isDecelRecord) {
+                        val avgDist = if (record.distanceBySpeed > 0 && record.distanceByGps > 0) {
+                            (record.distanceBySpeed + record.distanceByGps) / 2.0
+                        } else if (record.distanceBySpeed > 0) record.distanceBySpeed else record.distanceByGps
+                        val distText = if (avgDist > 0) "  ${String.format("%.0f", avgDist)}m" else ""
+                        Text(
+                            "${record.targetSpeed.toInt()}-0 km/h  |  ${record.displayTime}$distText",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = c.danger
+                        )
+                    } else {
+                        Text(
+                            stringResource(R.string.record_summary, record.targetSpeed.toInt(), String.format("%.0f", record.peakSpeed)),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = c.textSecondary
+                        )
+                    }
                     Text(
                         dateFormat.format(Date(record.timestamp)),
                         style = MaterialTheme.typography.labelSmall,
-                        color = SpeedGray.copy(alpha = 0.6f)
+                        color = c.textSecondary.copy(alpha = 0.6f)
                     )
                 }
 
-                // 펼치기 힌트
-                if (hasSplits) {
-                    Icon(
-                        if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                        contentDescription = null,
-                        tint = SpeedGray,
-                        modifier = Modifier.size(20.dp)
+                if (trackPoints.isNotEmpty()) {
+                    MiniTrackPreview(
+                        trackPoints = trackPoints,
+                        modifier = Modifier
+                            .size(width = 80.dp, height = 60.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(c.card)
+                            .border(
+                                width = 1.dp,
+                                color = c.textTertiary,
+                                shape = RoundedCornerShape(8.dp)
+                            )
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                 }
 
-                // 삭제 버튼
+                if (hasSplits) {
+                    Icon(
+                        if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                        contentDescription = null,
+                        tint = c.textSecondary,
+                        modifier = Modifier
+                            .size(20.dp)
+                            .clickable { expanded = !expanded }
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                }
+
                 IconButton(onClick = onDelete) {
                     Icon(
                         Icons.Filled.Close,
-                        contentDescription = "삭제",
-                        tint = SpeedGray,
+                        contentDescription = stringResource(R.string.delete),
+                        tint = c.textSecondary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
             }
 
-            // 구간 랩타임 확장 영역
             AnimatedVisibility(
                 visible = expanded && hasSplits,
                 enter = expandVertically() + fadeIn(),
@@ -246,16 +279,16 @@ private fun RecordCard(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                "0-${split.speed} km/h",
-                                color = SpeedGray,
+                                if (isDecelRecord) "${split.speed}-0 km/h" else "0-${split.speed} km/h",
+                                color = c.textSecondary,
                                 fontSize = 13.sp
                             )
                             Text(
-                                String.format("%.2f초", split.seconds),
+                                stringResource(R.string.split_time_format, split.seconds),
                                 color = when {
-                                    split.speed <= 100 -> RacingGreen
-                                    split.speed <= 150 -> RacingYellow
-                                    else -> RacingRed
+                                    split.speed <= 100 -> c.info
+                                    split.speed <= 150 -> c.info.copy(alpha = 0.7f)
+                                    else -> c.accent
                                 },
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 13.sp
@@ -264,6 +297,59 @@ private fun RecordCard(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun MiniTrackPreview(
+    trackPoints: List<TrackPoint>,
+    modifier: Modifier = Modifier
+) {
+    val c = LocalZero100Colors.current
+    if (trackPoints.size < 2) return
+
+    val lats = trackPoints.map { it.lat }
+    val lons = trackPoints.map { it.lon }
+    val minLat = lats.min()
+    val maxLat = lats.max()
+    val minLon = lons.min()
+    val maxLon = lons.max()
+    val latRange = (maxLat - minLat).coerceAtLeast(0.0001)
+    val lonRange = (maxLon - minLon).coerceAtLeast(0.0001)
+
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val pad = 4.dp.toPx()
+        val drawW = w - pad * 2
+        val drawH = h - pad * 2
+
+        for (i in 0 until trackPoints.size - 1) {
+            val pt1 = trackPoints[i]
+            val pt2 = trackPoints[i + 1]
+
+            val x1 = pad + ((pt1.lon - minLon) / lonRange * drawW).toFloat()
+            val y1 = pad + ((maxLat - pt1.lat) / latRange * drawH).toFloat()
+            val x2 = pad + ((pt2.lon - minLon) / lonRange * drawW).toFloat()
+            val y2 = pad + ((maxLat - pt2.lat) / latRange * drawH).toFloat()
+
+            val color = when {
+                pt2.speedKmh < 30 -> Color(0xFF2196F3)
+                pt2.speedKmh < 60 -> c.info
+                pt2.speedKmh < 100 -> c.success
+                pt2.speedKmh < 150 -> c.warning
+                pt2.speedKmh < 200 -> Color(0xFFFF9800)
+                else -> c.danger
+            }
+
+            drawLine(
+                color = color,
+                start = Offset(x1, y1),
+                end = Offset(x2, y2),
+                strokeWidth = 2.dp.toPx(),
+                cap = StrokeCap.Round
+            )
         }
     }
 }

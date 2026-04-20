@@ -4,8 +4,19 @@
     <!-- USB Host 권한 -->
     <uses-feature android:name="android.hardware.usb.host" android:required="true" />
 
+    <!-- 내장 GPS -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+
+    <!-- 지도 타일 다운로드 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <!-- 진동 피드백 -->
     <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- APK 설치 (OTA 업데이트) -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
 
     <application
         android:allowBackup="true"
@@ -13,6 +24,7 @@
         android:label="Zero100"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
+        android:localeConfig="@xml/locales_config"
         android:theme="@style/Theme.Zero100">
 
         <activity
@@ -35,6 +47,16 @@
                 android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
                 android:resource="@xml/device_filter" />
         </activity>
+        <!-- FileProvider for OTA APK install -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- C안: 레이싱 스트라이프 -->
+
+    <!-- 2개의 레드 레이싱 스트라이프 (세로) -->
+    <path
+        android:fillColor="#E53935"
+        android:pathData="M42,16 L48,16 L48,92 L42,92Z"/>
+    <path
+        android:fillColor="#E53935"
+        android:pathData="M60,16 L66,16 L66,92 L60,92Z"/>
+
+    <!-- 스트라이프 사이 얇은 라인 (강조) -->
+    <path
+        android:fillColor="#E53935"
+        android:pathData="M52,16 L56,16 L56,92 L52,92Z"
+        android:alpha="0.3"/>
+
+    <!-- "ZERO" 텍스트 (상단, 흰색, 작게) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,38 L34,38 L34,40 L32,40 L32,42 L34,42 L34,44 L30,44 L30,42 L32,42 L32,40 L30,40Z"/>
+    <path android:fillColor="#FFFFFF" android:pathData="M36,38 L40,38 L40,40 L38,40 L38,42 L40,42 L40,44 L36,44Z"/>
+    <path android:fillColor="#FFFFFF" android:pathData="M70,38 L74,38 L74,40 L72,40 L72,42 L74,42 L74,44 L70,44 L70,42 L72,42 L72,40 L70,40Z"/>
+    <path android:fillColor="#FFFFFF" android:pathData="M76,44 L76,38 Q76,36 78,36 Q80,36 80,38 L80,44 Q80,46 78,46 Q76,46 76,44Z M77.5,38 L77.5,44 L78.5,44 L78.5,38Z"/>
+
+    <!-- "100" 대형 텍스트 (중앙, 흰색, 볼드) -->
+    <!-- "1" -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M28,52 L28,72 L32,72 L32,52Z"/>
+    <!-- 첫번째 "0" -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M36,68 L36,56 Q36,52 40,52 L42,52 Q46,52 46,56 L46,68 Q46,72 42,72 L40,72 Q36,72 36,68Z"/>
+    <path
+        android:fillColor="#0A0A0A"
+        android:pathData="M40,57 L40,67 L42,67 L42,57Z"/>
+    <!-- 두번째 "0" -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M50,68 L50,56 Q50,52 54,52 L56,52 Q60,52 60,56 L60,68 Q60,72 56,72 L54,72 Q50,72 50,68Z"/>
+    <path
+        android:fillColor="#0A0A0A"
+        android:pathData="M54,57 L54,67 L56,67 L56,57Z"/>
+
+</vector>

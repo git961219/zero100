@@ -68,4 +68,114 @@
     <string name="info_condition_value">25Hz + 卫星8颗以上 + HDOP &lt; 3.0</string>
     <string name="info_splits">分段记录</string>
     <string name="info_splits_value">60 / 100 / 150 / 200 km/h</string>
+
+    <string name="disconnected">未连接</string>
+    <string name="accuracy">精度</string>
+    <string name="accuracy_best">最佳</string>
+    <string name="accuracy_good">良好</string>
+    <string name="accuracy_normal">一般</string>
+    <string name="accuracy_low">较低</string>
+    <string name="accuracy_bad">较差</string>
+    <string name="reception">接收</string>
+    <string name="reception_precise">精密</string>
+    <string name="reception_good">良好</string>
+    <string name="reception_ultra">超精密</string>
+    <string name="reception_correcting">校正中</string>
+    <string name="reception_none">无</string>
+    <string name="gps_waiting">等待GPS信号...</string>
+    <string name="satellite_waiting">等待卫星接收...</string>
+    <string name="satellite_receiving">正在接收卫星，请稍候</string>
+    <string name="upgrading_mode">切换高速模式中...</string>
+    <string name="signal_stabilizing">信号稳定中...</string>
+    <string name="ready_high_performance">测量准备完成！（高性能模式）</string>
+    <string name="ready_internal_gps">测量准备完成（内置GPS）</string>
+    <string name="external_gps_hint">连接外部USB GPS可进行25Hz高精度测量</string>
+    <string name="gps_signal_waiting">等待GPS信号...\n连接USB外部GPS可使用高性能模式</string>
+    <string name="preparing">准备中...</string>
+    <string name="history">记录</string>
+    <string name="external_gps_label">外部GPS (%dHz)</string>
+    <string name="internal_gps">内置GPS</string>
+    <string name="best_record_label">最佳记录</string>
+
+    <string name="back">返回</string>
+    <string name="tab_splits">分段</string>
+    <string name="tab_graph">图表</string>
+    <string name="tab_map">地图</string>
+    <string name="share_result">分享结果</string>
+    <string name="measure_done">测量完成</string>
+    <string name="long_press_stop">长按停止</string>
+    <string name="peak_speed_label">最高速度: %1$s km/h</string>
+    <string name="split_time_format">%1$.2f秒</string>
+
+    <string name="language">语言</string>
+    <string name="language_desc">选择应用显示语言。更改后应用将重启。</string>
+    <string name="lang_system">系统默认</string>
+    <string name="current_source">当前来源</string>
+    <string name="external_ublox">外部u-blox M9 (%dHz)</string>
+    <string name="internal_gps_1hz">内置GPS (~2Hz)</string>
+    <string name="mode_label">模式</string>
+    <string name="mode_high">高性能模式</string>
+    <string name="mode_basic">基本模式</string>
+    <string name="start_condition">测量启动条件</string>
+    <string name="start_condition_external">25Hz + 卫星8颗以上 + HDOP &lt; 3.0</string>
+    <string name="start_condition_internal">GPS信号接收</string>
+    <string name="external_gps_promo">通过USB OTG连接外部GPS模块(u-blox M9)可进行25Hz高精度测量</string>
+    <string name="record_summary">0-%1$d km/h  |  最高 %2$s km/h</string>
+
+    <string name="onboarding_title_1">连接GPS模块</string>
+    <string name="onboarding_desc_1">使用USB OTG线缆\n将GPS模块(u-blox M9)\n连接到手机。</string>
+    <string name="onboarding_title_2">等待卫星接收</string>
+    <string name="onboarding_desc_2">请在户外开阔地\n等待卫星接收。\n接收8颗以上即可测量。</string>
+    <string name="start_app">开始</string>
+    <string name="next">下一步</string>
+    <string name="skip">跳过</string>
+
+    <!-- RecordDetailScreen -->
+    <string name="detail_title">记录详情</string>
+    <string name="record_not_found">找不到记录</string>
+    <string name="rollout_badge">1ft</string>
+    <string name="no_split_data">无分段数据</string>
+    <string name="no_graph_data">无图表数据</string>
+    <string name="delete_record_confirm">确定删除此记录？</string>
+
+    <!-- 距离显示 -->
+    <string name="distance_label">行驶距离:</string>
+    <string name="distance_accuracy">精度 %1$s%%</string>
+
+    <!-- 主题设置 -->
+    <string name="settings_theme">主题</string>
+    <string name="settings_theme_desc">选择应用主题。</string>
+    <string name="theme_dark">深色</string>
+    <string name="theme_light">浅色</string>
+    <string name="theme_system">跟随系统</string>
+
+    <!-- 制动测试 -->
+    <string name="mode_accel">加速</string>
+    <string name="mode_decel">制动</string>
+    <string name="start_braking_test">制动测试</string>
+    <string name="status_decel_idle">请加速至目标速度</string>
+    <string name="status_decel_ready">请踩刹车！</string>
+    <string name="status_decel_measuring">制动中…</string>
+    <string name="braking_distance_label">制动距离: %1$s m</string>
+    <string name="record_summary_decel">%1$d-0 km/h  |  最高 %2$s km/h</string>
+    <string name="decel_start_speed">制动起始速度</string>
+    <string name="decel_start_speed_desc">选择制动测试起始速度。在该速度以上踩刹车时开始测量。</string>
+    <string name="current_decel_target">当前: %d-0 km/h 制动测量</string>
+    <string name="snack_decel_changed">制动起始速度已更改为%1$dkm/h</string>
+
+    <!-- 设置Snackbar -->
+    <string name="snack_target_changed">目标速度已更改为%1$dkm/h</string>
+    <string name="snack_rollout_on">1英尺滚动校正已启用</string>
+    <string name="snack_rollout_off">1英尺滚动校正已禁用</string>
+    <string name="snack_lang_changed">语言已更改。应用将重启。</string>
+
+    <!-- OTA更新 -->
+    <string name="update_available">新版本 %s 可用</string>
+    <string name="update_download">更新</string>
+    <string name="update_later">稍后</string>
+    <string name="update_checking">正在检查更新...</string>
+    <string name="update_downloading">下载中... %d%%</string>
+    <string name="update_current_version">当前版本</string>
+    <string name="update_check">检查更新</string>
+    <string name="update_latest">已是最新版本</string>
 </resources>

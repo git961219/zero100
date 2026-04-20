@@ -68,4 +68,114 @@
     <string name="info_condition_value">25Hz + 8+ Sats + HDOP &lt; 3.0</string>
     <string name="info_splits">Split Records</string>
     <string name="info_splits_value">60 / 100 / 150 / 200 km/h</string>
+
+    <string name="disconnected">Disconnected</string>
+    <string name="accuracy">Accuracy</string>
+    <string name="accuracy_best">Excellent</string>
+    <string name="accuracy_good">Good</string>
+    <string name="accuracy_normal">Fair</string>
+    <string name="accuracy_low">Low</string>
+    <string name="accuracy_bad">Poor</string>
+    <string name="reception">Fix</string>
+    <string name="reception_precise">DGPS</string>
+    <string name="reception_good">GPS</string>
+    <string name="reception_ultra">RTK</string>
+    <string name="reception_correcting">Float</string>
+    <string name="reception_none">None</string>
+    <string name="gps_waiting">Waiting for GPS signal...</string>
+    <string name="satellite_waiting">Waiting for satellites...</string>
+    <string name="satellite_receiving">Receiving satellites, please wait</string>
+    <string name="upgrading_mode">Switching to high-speed mode...</string>
+    <string name="signal_stabilizing">Stabilizing signal...</string>
+    <string name="ready_high_performance">Ready to measure! (High-performance)</string>
+    <string name="ready_internal_gps">Ready to measure (Internal GPS)</string>
+    <string name="external_gps_hint">Connect external USB GPS for 25Hz precision measurement</string>
+    <string name="gps_signal_waiting">Waiting for GPS signal...\nConnect USB external GPS for high-performance mode</string>
+    <string name="preparing">Preparing...</string>
+    <string name="history">History</string>
+    <string name="external_gps_label">External GPS (%dHz)</string>
+    <string name="internal_gps">Internal GPS</string>
+    <string name="best_record_label">Best Record</string>
+
+    <string name="back">Back</string>
+    <string name="tab_splits">Splits</string>
+    <string name="tab_graph">Graph</string>
+    <string name="tab_map">Map</string>
+    <string name="share_result">Share Result</string>
+    <string name="measure_done">Measurement Complete</string>
+    <string name="long_press_stop">Long press to stop</string>
+    <string name="peak_speed_label">Peak: %1$s km/h</string>
+    <string name="split_time_format">%1$.2fs</string>
+
+    <string name="language">Language</string>
+    <string name="language_desc">Select app display language. App will restart on change.</string>
+    <string name="lang_system">System Default</string>
+    <string name="current_source">Current Source</string>
+    <string name="external_ublox">External u-blox M9 (%dHz)</string>
+    <string name="internal_gps_1hz">Internal GPS (~2Hz)</string>
+    <string name="mode_label">Mode</string>
+    <string name="mode_high">High-performance</string>
+    <string name="mode_basic">Basic</string>
+    <string name="start_condition">Start Condition</string>
+    <string name="start_condition_external">25Hz + 8+ Sats + HDOP &lt; 3.0</string>
+    <string name="start_condition_internal">GPS signal acquired</string>
+    <string name="external_gps_promo">Connect external GPS module (u-blox M9) via USB OTG for 25Hz precision measurement</string>
+    <string name="record_summary">0-%1$d km/h  |  Peak %2$s km/h</string>
+
+    <string name="onboarding_title_1">Connect GPS Module</string>
+    <string name="onboarding_desc_1">Connect the GPS module\n(u-blox M9) to your phone\nusing a USB OTG cable.</string>
+    <string name="onboarding_title_2">Wait for Satellites</string>
+    <string name="onboarding_desc_2">Wait for satellite reception\nin an open outdoor area.\nMeasurement is possible with 8+ satellites.</string>
+    <string name="start_app">Get Started</string>
+    <string name="next">Next</string>
+    <string name="skip">Skip</string>
+
+    <!-- RecordDetailScreen -->
+    <string name="detail_title">Record Detail</string>
+    <string name="record_not_found">Record not found</string>
+    <string name="rollout_badge">1ft</string>
+    <string name="no_split_data">No split data</string>
+    <string name="no_graph_data">No graph data</string>
+    <string name="delete_record_confirm">Delete this record?</string>
+
+    <!-- Distance -->
+    <string name="distance_label">Distance:</string>
+    <string name="distance_accuracy">Accuracy %1$s%%</string>
+
+    <!-- Theme Settings -->
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_desc">Select the app theme.</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_system">System</string>
+
+    <!-- Braking Test -->
+    <string name="mode_accel">Accel</string>
+    <string name="mode_decel">Brake</string>
+    <string name="start_braking_test">Braking Test</string>
+    <string name="status_decel_idle">Accelerate to target speed</string>
+    <string name="status_decel_ready">Hit the brakes!</string>
+    <string name="status_decel_measuring">Braking…</string>
+    <string name="braking_distance_label">Braking distance: %1$s m</string>
+    <string name="record_summary_decel">%1$d-0 km/h  |  Peak %2$s km/h</string>
+    <string name="decel_start_speed">Braking Start Speed</string>
+    <string name="decel_start_speed_desc">Select the speed at which braking test begins. Measurement starts when you brake below this speed.</string>
+    <string name="current_decel_target">Current: %d-0 km/h braking test</string>
+    <string name="snack_decel_changed">Braking start speed changed to %1$dkm/h</string>
+
+    <!-- Settings Snackbar -->
+    <string name="snack_target_changed">Target speed changed to %1$dkm/h</string>
+    <string name="snack_rollout_on">1-Foot Rollout correction enabled</string>
+    <string name="snack_rollout_off">1-Foot Rollout correction disabled</string>
+    <string name="snack_lang_changed">Language changed. App will restart.</string>
+
+    <!-- OTA Update -->
+    <string name="update_available">New version %s available</string>
+    <string name="update_download">Update</string>
+    <string name="update_later">Later</string>
+    <string name="update_checking">Checking for updates...</string>
+    <string name="update_downloading">Downloading... %d%%</string>
+    <string name="update_current_version">Current Version</string>
+    <string name="update_check">Check for Updates</string>
+    <string name="update_latest">You are up to date</string>
 </resources>

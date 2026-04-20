@@ -14,41 +14,44 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ableLabs.zero100.R
 import com.ableLabs.zero100.ui.theme.*
 import kotlinx.coroutines.launch
 
 data class OnboardingPage(
     val icon: ImageVector,
-    val title: String,
-    val description: String
+    val titleRes: Int,
+    val descriptionRes: Int
 )
 
 private val pages = listOf(
     OnboardingPage(
         icon = Icons.Filled.Usb,
-        title = "GPS 모듈 연결",
-        description = "USB OTG 케이블로\nGPS 모듈(u-blox M9)을\n스마트폰에 연결하세요."
+        titleRes = R.string.onboarding_title_1,
+        descriptionRes = R.string.onboarding_desc_1
     ),
     OnboardingPage(
         icon = Icons.Filled.SatelliteAlt,
-        title = "위성 수신 대기",
-        description = "야외 개활지에서\n위성 수신을 기다려주세요.\n8개 이상 잡히면 측정 가능합니다."
+        titleRes = R.string.onboarding_title_2,
+        descriptionRes = R.string.onboarding_desc_2
     )
 )
 
 @Composable
 fun OnboardingScreen(onFinish: () -> Unit) {
+    val c = LocalZero100Colors.current
     val pagerState = rememberPagerState(pageCount = { pages.size })
     val scope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(DarkBg)
+            .background(c.background)
             .padding(WindowInsets.systemBars.asPaddingValues())
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -62,7 +65,6 @@ fun OnboardingScreen(onFinish: () -> Unit) {
             OnboardingPageContent(pages[page])
         }
 
-        // 페이지 인디케이터
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(16.dp)
@@ -73,8 +75,8 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                         .size(if (pagerState.currentPage == index) 10.dp else 8.dp)
                         .clip(CircleShape)
                         .background(
-                            if (pagerState.currentPage == index) RacingRed
-                            else SpeedGray.copy(alpha = 0.4f)
+                            if (pagerState.currentPage == index) c.accent
+                            else c.textSecondary.copy(alpha = 0.4f)
                         )
                 )
             }
@@ -82,7 +84,6 @@ fun OnboardingScreen(onFinish: () -> Unit) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // 버튼
         if (pagerState.currentPage == pages.lastIndex) {
             Button(
                 onClick = onFinish,
@@ -90,9 +91,9 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = RacingRed)
+                colors = ButtonDefaults.buttonColors(containerColor = c.accent)
             ) {
-                Text("시작하기", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text(stringResource(R.string.start_app), fontWeight = FontWeight.Bold, fontSize = 18.sp)
             }
         } else {
             Button(
@@ -101,21 +102,21 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = DarkCard)
+                colors = ButtonDefaults.buttonColors(containerColor = c.card)
             ) {
-                Text("다음", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text(stringResource(R.string.next), fontWeight = FontWeight.Bold, fontSize = 18.sp)
             }
         }
 
-        // 건너뛰기
         TextButton(onClick = onFinish) {
-            Text("건너뛰기", color = SpeedGray)
+            Text(stringResource(R.string.skip), color = c.textSecondary)
         }
     }
 }
 
 @Composable
 private fun OnboardingPageContent(page: OnboardingPage) {
+    val c = LocalZero100Colors.current
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -124,22 +125,22 @@ private fun OnboardingPageContent(page: OnboardingPage) {
         Icon(
             page.icon,
             contentDescription = null,
-            tint = RacingRed,
+            tint = c.accent,
             modifier = Modifier.size(80.dp)
         )
         Spacer(modifier = Modifier.height(32.dp))
         Text(
-            page.title,
+            stringResource(page.titleRes),
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = SpeedWhite,
+            color = c.textPrimary,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            page.description,
+            stringResource(page.descriptionRes),
             fontSize = 16.sp,
-            color = SpeedGray,
+            color = c.textSecondary,
             textAlign = TextAlign.Center,
             lineHeight = 24.sp
         )

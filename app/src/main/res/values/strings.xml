@@ -74,4 +74,118 @@
     <string name="info_condition_value">25Hz + 위성 8개 이상 + HDOP &lt; 3.0</string>
     <string name="info_splits">구간 기록</string>
     <string name="info_splits_value">60 / 100 / 150 / 200 km/h</string>
+
+    <!-- MainScreen 추가 -->
+    <string name="disconnected">미연결</string>
+    <string name="accuracy">정밀도</string>
+    <string name="accuracy_best">최상</string>
+    <string name="accuracy_good">좋음</string>
+    <string name="accuracy_normal">보통</string>
+    <string name="accuracy_low">낮음</string>
+    <string name="accuracy_bad">나쁨</string>
+    <string name="reception">수신</string>
+    <string name="reception_precise">정밀</string>
+    <string name="reception_good">양호</string>
+    <string name="reception_ultra">초정밀</string>
+    <string name="reception_correcting">보정중</string>
+    <string name="reception_none">없음</string>
+    <string name="gps_waiting">GPS 신호 대기 중...</string>
+    <string name="satellite_waiting">위성 수신 대기 중...</string>
+    <string name="satellite_receiving">위성 수신 중, 잠시만 기다려주세요</string>
+    <string name="upgrading_mode">고속 모드로 전환 중...</string>
+    <string name="signal_stabilizing">신호 안정화 중...</string>
+    <string name="ready_high_performance">측정 준비 완료! (고성능 모드)</string>
+    <string name="ready_internal_gps">측정 준비 완료 (내장 GPS)</string>
+    <string name="external_gps_hint">외부 USB GPS 연결 시 25Hz 고정밀 측정이 가능합니다</string>
+    <string name="gps_signal_waiting">GPS 신호를 기다리는 중...\nUSB 외부 GPS를 연결하면 고성능 모드를 사용할 수 있습니다</string>
+    <string name="preparing">준비 중...</string>
+    <string name="history">기록</string>
+    <string name="external_gps_label">외부 GPS (%dHz)</string>
+    <string name="internal_gps">내장 GPS</string>
+    <string name="best_record_label">최고 기록</string>
+
+    <!-- MeasureScreen 추가 -->
+    <string name="back">뒤로</string>
+    <string name="tab_splits">구간</string>
+    <string name="tab_graph">그래프</string>
+    <string name="tab_map">지도</string>
+    <string name="share_result">결과 공유</string>
+    <string name="measure_done">측정 완료</string>
+    <string name="long_press_stop">길게 눌러 종료</string>
+    <string name="peak_speed_label">최고속도: %1$s km/h</string>
+    <string name="split_time_format">%1$.2f초</string>
+
+    <!-- SettingsScreen 추가 -->
+    <string name="language">언어</string>
+    <string name="language_desc">앱 표시 언어를 선택합니다. 변경 시 앱이 재시작됩니다.</string>
+    <string name="lang_system">시스템 기본</string>
+    <string name="current_source">현재 소스</string>
+    <string name="external_ublox">외부 u-blox M9 (%dHz)</string>
+    <string name="internal_gps_1hz">내장 GPS (~2Hz)</string>
+    <string name="mode_label">모드</string>
+    <string name="mode_high">고성능 모드</string>
+    <string name="mode_basic">기본 모드</string>
+    <string name="start_condition">측정 시작 조건</string>
+    <string name="start_condition_external">25Hz + 위성 8개 이상 + HDOP &lt; 3.0</string>
+    <string name="start_condition_internal">GPS 신호 수신</string>
+    <string name="external_gps_promo">USB OTG로 외부 GPS 모듈(u-blox M9)을 연결하면 25Hz 고정밀 측정이 가능합니다</string>
+    <string name="record_summary">0-%1$d km/h  |  최고 %2$s km/h</string>
+
+    <!-- OnboardingScreen 추가 -->
+    <string name="onboarding_title_1">GPS 모듈 연결</string>
+    <string name="onboarding_desc_1">USB OTG 케이블로\nGPS 모듈(u-blox M9)을\n스마트폰에 연결하세요.</string>
+    <string name="onboarding_title_2">위성 수신 대기</string>
+    <string name="onboarding_desc_2">야외 개활지에서\n위성 수신을 기다려주세요.\n8개 이상 잡히면 측정 가능합니다.</string>
+    <string name="start_app">시작하기</string>
+    <string name="next">다음</string>
+    <string name="skip">건너뛰기</string>
+
+    <!-- RecordDetailScreen -->
+    <string name="detail_title">기록 상세</string>
+    <string name="record_not_found">기록을 찾을 수 없습니다</string>
+    <string name="rollout_badge">1ft</string>
+    <string name="no_split_data">구간 데이터 없음</string>
+    <string name="no_graph_data">그래프 데이터 없음</string>
+    <string name="delete_record_confirm">이 기록을 삭제하시겠습니까?</string>
+
+    <!-- 거리 표시 -->
+    <string name="distance_label">주행 거리:</string>
+    <string name="distance_accuracy">정확도 %1$s%%</string>
+
+    <!-- 테마 설정 -->
+    <string name="settings_theme">테마</string>
+    <string name="settings_theme_desc">앱의 화면 테마를 선택합니다.</string>
+    <string name="theme_dark">다크</string>
+    <string name="theme_light">라이트</string>
+    <string name="theme_system">시스템</string>
+
+    <!-- 감속(브레이크) 테스트 -->
+    <string name="mode_accel">가속</string>
+    <string name="mode_decel">감속</string>
+    <string name="start_braking_test">제동 테스트</string>
+    <string name="status_decel_idle">목표 속도까지 가속하세요</string>
+    <string name="status_decel_ready">브레이크를 밟으세요!</string>
+    <string name="status_decel_measuring">제동 중…</string>
+    <string name="braking_distance_label">제동거리: %1$s m</string>
+    <string name="record_summary_decel">%1$d-0 km/h  |  최고 %2$s km/h</string>
+    <string name="decel_start_speed">감속 시작 속도</string>
+    <string name="decel_start_speed_desc">제동 테스트 시작 속도를 선택합니다. 해당 속도 이상에서 브레이크를 밟으면 측정이 시작됩니다.</string>
+    <string name="current_decel_target">현재: %d-0 km/h 제동 측정</string>
+    <string name="snack_decel_changed">감속 시작 속도가 %1$dkm/h로 변경되었습니다</string>
+
+    <!-- 설정 Snackbar -->
+    <string name="snack_target_changed">목표 속도가 %1$dkm/h로 변경되었습니다</string>
+    <string name="snack_rollout_on">1-Foot Rollout 보정이 활성화되었습니다</string>
+    <string name="snack_rollout_off">1-Foot Rollout 보정이 비활성화되었습니다</string>
+    <string name="snack_lang_changed">언어가 변경됩니다. 앱이 재시작됩니다.</string>
+
+    <!-- OTA 업데이트 -->
+    <string name="update_available">새 버전 %s 사용 가능</string>
+    <string name="update_download">업데이트</string>
+    <string name="update_later">나중에</string>
+    <string name="update_checking">업데이트 확인 중...</string>
+    <string name="update_downloading">다운로드 중... %d%%</string>
+    <string name="update_current_version">현재 버전</string>
+    <string name="update_check">업데이트 확인</string>
+    <string name="update_latest">최신 버전입니다</string>
 </resources>

@@ -66,13 +66,14 @@ object UbxConfig {
     fun enableGga(): ByteArray = setNmeaMessageRate(0x00, 1)
 
     /**
-     * 불필요한 NMEA 메시지 비활성화 (GSA, GSV, GLL)
-     * 25Hz에서 대역폭 확보를 위해 필수
+     * 불필요한 NMEA 메시지 비활성화 (GLL만)
+     * GSV(위성정보)와 GSA(DOP)는 유지 — 위성 수/감도 표시에 필요
+     * GSV/GSA는 매 사이클이 아닌 5사이클마다 출력으로 설정 (대역폭 절약)
      */
-    fun disableUnnecessaryMessages(): List<ByteArray> = listOf(
-        setNmeaMessageRate(0x02, 0), // GSA off
-        setNmeaMessageRate(0x03, 0), // GSV off
-        setNmeaMessageRate(0x01, 0), // GLL off
+    fun optimizeMessages(): List<ByteArray> = listOf(
+        setNmeaMessageRate(0x01, 0),  // GLL off (불필요)
+        setNmeaMessageRate(0x02, 5),  // GSA: 5사이클마다 (DOP 정보)
+        setNmeaMessageRate(0x03, 5),  // GSV: 5사이클마다 (위성 정보)
     )
 
     /**
@@ -110,7 +111,7 @@ object UbxConfig {
         commands.add(enableRmc())
         commands.add(enableVtg())
         commands.add(enableGga())
-        commands.addAll(disableUnnecessaryMessages())
+        commands.addAll(optimizeMessages())
         commands.add(setRate25Hz())
         return commands
     }

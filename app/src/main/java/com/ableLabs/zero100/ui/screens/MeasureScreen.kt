@@ -13,6 +13,8 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -26,15 +28,23 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ableLabs.zero100.R
+import com.ableLabs.zero100.measurement.DistanceCheckpoint
+import com.ableLabs.zero100.measurement.MeasureMode
 import com.ableLabs.zero100.measurement.MeasureState
 import com.ableLabs.zero100.measurement.SplitTime
+import com.ableLabs.zero100.measurement.TrackPoint
 import com.ableLabs.zero100.ui.theme.*
 import com.ableLabs.zero100.viewmodel.MainViewModel
 import kotlinx.coroutines.delay
@@ -95,12 +105,16 @@ fun MeasureScreen(
     viewModel: MainViewModel,
     onBack: () -> Unit
 ) {
+    val c = LocalZero100Colors.current
     val context = LocalContext.current
     val measureState by viewModel.measureState.collectAsState()
     val currentSpeed by viewModel.currentSpeed.collectAsState()
     val result by viewModel.result.collectAsState()
     val liveSplits by viewModel.engine.liveSplits.collectAsState()
     val targetSpeed by viewModel.targetSpeedSetting.collectAsState()
+    val measureMode by viewModel.measureMode.collectAsState()
+    val decelStartSpeed by viewModel.decelStartSpeed.collectAsState()
+    val isDecel = measureMode == MeasureMode.DECELERATION
 
     var displayElapsed by remember { mutableLongStateOf(0L) }
     LaunchedEffect(measureState) {
@@ -112,7 +126,6 @@ fun MeasureScreen(
         }
     }
 
-    // --- 화면 밝기: 진입 시 최대, 나가면 복원 ---
     DisposableEffect(Unit) {
         val originalBrightness = setScreenBrightnessMax(context)
         onDispose {
@@ -120,20 +133,18 @@ fun MeasureScreen(
         }
     }
 
-    // --- 진동 피드백: 상태 변경 감지 ---
     var prevState by remember { mutableStateOf<MeasureState?>(null) }
     LaunchedEffect(measureState) {
         if (prevState != null) {
             when (measureState) {
-                MeasureState.MEASURING -> vibrateShort(context) // 출발 감지
-                MeasureState.FINISHED -> vibrateLong(context)   // 측정 완료
+                MeasureState.MEASURING -> vibrateShort(context)
+                MeasureState.FINISHED -> vibrateLong(context)
                 else -> {}
             }
         }
         prevState = measureState
     }
 
-    // --- 진동 피드백: 구간 랩 기록 시 ---
     var prevSplitCount by remember { mutableIntStateOf(0) }
     LaunchedEffect(liveSplits) {
         if (liveSplits.size > prevSplitCount && prevSplitCount > 0) {
@@ -149,7 +160,7 @@ fun MeasureScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(DarkBg)
+            .background(c.background)
             .padding(WindowInsets.systemBars.asPaddingValues())
             .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -161,19 +172,22 @@ fun MeasureScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로", tint = SpeedWhite)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back), tint = c.textPrimary)
             }
-            Text("0-${targetSpeed} km/h", style = MaterialTheme.typography.titleMedium, color = SpeedWhite)
+            Text(
+                if (isDecel) "${decelStartSpeed}-0 km/h" else "0-${targetSpeed} km/h",
+                style = MaterialTheme.typography.titleMedium.copy(fontFamily = FontFamily.Monospace),
+                color = if (isDecel) c.danger else c.textPrimary
+            )
             Spacer(modifier = Modifier.width(48.dp))
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-        StatusBadge(measureState)
+        StatusBadge(measureState, measureMode)
         Spacer(modifier = Modifier.height(24.dp))
 
         when (measureState) {
             MeasureState.FINISHED -> {
-                // 결과 화면 — 스크롤 가능
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -181,10 +195,16 @@ fun MeasureScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     result?.let { r ->
-                        // 결과 카드
+                        val resultColor = if (isDecel) c.danger else c.info
                         Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = DarkCard),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .border(
+                                    width = 1.dp,
+                                    color = resultColor.copy(alpha = 0.5f),
+                                    shape = RoundedCornerShape(20.dp)
+                                ),
+                            colors = CardDefaults.cardColors(containerColor = c.card),
                             shape = RoundedCornerShape(20.dp)
                         ) {
                             Column(
@@ -193,94 +213,182 @@ fun MeasureScreen(
                             ) {
                                 Text(
                                     text = String.format("%.2f", r.elapsedSeconds),
-                                    fontSize = 72.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = (-2).sp,
-                                    color = RacingGreen
+                                    style = TimerDisplayStyle,
+                                    color = resultColor
                                 )
-                                Text("초", style = SpeedUnitStyle)
+                                Text(stringResource(R.string.seconds), style = SpeedUnitStyle.copy(color = c.textSecondary))
 
                                 Spacer(modifier = Modifier.height(8.dp))
+
+                                if (isDecel) {
+                                    // 감속 모드: 제동 거리 강조
+                                    if (r.distanceM > 0) {
+                                        Text(
+                                            stringResource(R.string.braking_distance_label, String.format("%.1f", r.distanceM)),
+                                            color = c.danger,
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            fontFamily = FontFamily.Monospace
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                    }
+                                }
+
                                 Text(
-                                    "최고 속도: ${String.format("%.1f", r.peakSpeed)} km/h",
-                                    color = SpeedGray,
-                                    fontSize = 14.sp
+                                    stringResource(R.string.peak_speed_label, String.format("%.1f", r.peakSpeed)),
+                                    color = c.textSecondary,
+                                    fontSize = 14.sp,
+                                    fontFamily = FontFamily.Monospace
                                 )
+
+                                if (r.distanceM > 0 && !isDecel) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    val distText = if (r.distanceM >= 1000) {
+                                        String.format("%.2f km", r.distanceM / 1000.0)
+                                    } else {
+                                        String.format("%.0f m", r.distanceM)
+                                    }
+                                    val accText = if (r.distanceAccuracy > 0) {
+                                        " (${stringResource(R.string.distance_accuracy, String.format("%.1f", r.distanceAccuracy))})"
+                                    } else ""
+                                    Text(
+                                        stringResource(R.string.distance_label) + " $distText$accText",
+                                        color = c.textSecondary,
+                                        fontSize = 14.sp,
+                                        fontFamily = FontFamily.Monospace
+                                    )
+                                }
                             }
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // 구간 랩타임
-                        if (r.splits.isNotEmpty()) {
-                            AnimatedSplitTimesDisplay(r.splits)
+                        var selectedTab by remember { mutableIntStateOf(0) }
+                        val hasTrackPoints = r.trackPoints.isNotEmpty()
+                        val tabSplits = stringResource(R.string.tab_splits)
+                        val tabGraph = stringResource(R.string.tab_graph)
+                        val tabMap = stringResource(R.string.tab_map)
+                        val tabTitles = if (hasTrackPoints) listOf(tabSplits, tabGraph, tabMap) else listOf(tabSplits, tabGraph)
+
+                        TabRow(
+                            selectedTabIndex = selectedTab,
+                            containerColor = c.card,
+                            contentColor = c.info,
+                            modifier = Modifier.clip(RoundedCornerShape(12.dp))
+                        ) {
+                            tabTitles.forEachIndexed { index, title ->
+                                Tab(
+                                    selected = selectedTab == index,
+                                    onClick = { selectedTab = index },
+                                    text = { Text(title) }
+                                )
+                            }
                         }
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                        // 속도 그래프
-                        SpeedGraph(
-                            points = r.speedLog.map { it.timeMs to it.speedKmh },
-                            targetSpeed = r.targetSpeed,
-                            splits = r.splits,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(180.dp)
-                        )
+                        when (selectedTab) {
+                            0 -> {
+                                SplitAndDistanceTabs(
+                                    splits = r.splits,
+                                    distanceCheckpoints = r.distanceCheckpoints
+                                )
+                            }
+                            1 -> {
+                                SpeedGraph(
+                                    points = r.speedLog.map { it.timeMs to it.speedKmh },
+                                    targetSpeed = r.targetSpeed,
+                                    splits = r.splits,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(200.dp)
+                                )
+                            }
+                            2 -> {
+                                if (hasTrackPoints) {
+                                    MapResultView(
+                                        trackPoints = r.trackPoints,
+                                        splits = r.splits,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(300.dp)
+                                            .clip(RoundedCornerShape(12.dp))
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
 
             MeasureState.MEASURING -> {
-                // 타이머 — 더 크게
                 Text(
                     text = String.format("%.2f", displayElapsed / 1000.0),
-                    fontSize = 80.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = (-2).sp,
-                    color = RacingYellow
+                    style = TimerDisplayStyle,
+                    color = if (isDecel) c.danger else c.info
                 )
-                Text("초", style = SpeedUnitStyle)
+                Text(stringResource(R.string.seconds), style = SpeedUnitStyle.copy(color = c.textSecondary))
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // 현재 속도 — 보조 표시
+                if (isDecel) {
+                    // 감속: 역방향 프로그레스바 (현재속도 -> 0)
+                    SpeedProgressBar(
+                        currentSpeed = decelStartSpeed.toDouble() - currentSpeed,
+                        targetSpeed = decelStartSpeed.toDouble(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(8.dp),
+                        barColor = c.danger
+                    )
+                } else {
+                    SpeedProgressBar(
+                        currentSpeed = currentSpeed,
+                        targetSpeed = targetSpeed.toDouble(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(8.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
                 Text(
                     text = String.format("%.0f", currentSpeed),
                     fontSize = 40.sp,
                     fontWeight = FontWeight.Bold,
-                    color = SpeedWhite.copy(alpha = 0.7f)
+                    fontFamily = FontFamily.Monospace,
+                    color = c.textPrimary.copy(alpha = 0.7f)
                 )
-                Text("km/h", color = SpeedGray, fontSize = 14.sp)
+                Text("km/h", color = c.textSecondary, fontSize = 14.sp)
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 실시간 구간 랩타임 (애니메이션 추가)
                 if (liveSplits.isNotEmpty()) {
-                    AnimatedSplitTimesDisplay(liveSplits)
+                    // 측정 중에는 주요 구간(60/100/150/200)만 기본 표시
+                    val majorSplits = liveSplits.filter { it.isMajor }
+                    AnimatedSplitTimesDisplay(majorSplits)
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
             }
 
             else -> {
-                // 대기/준비 상태
                 Text(
                     text = "0.00",
-                    fontSize = 80.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = (-2).sp,
-                    color = SpeedGray
+                    style = TimerDisplayStyle,
+                    color = c.textTertiary
                 )
-                Text("초", style = SpeedUnitStyle)
+                Text(stringResource(R.string.seconds), style = SpeedUnitStyle.copy(color = c.textSecondary))
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(
                     text = String.format("%.0f", currentSpeed),
                     fontSize = 40.sp,
                     fontWeight = FontWeight.Bold,
-                    color = SpeedWhite
+                    fontFamily = FontFamily.Monospace,
+                    color = c.textPrimary
                 )
-                Text("km/h", color = SpeedGray, fontSize = 14.sp)
+                Text("km/h", color = c.textSecondary, fontSize = 14.sp)
 
                 Spacer(modifier = Modifier.weight(1f))
             }
@@ -289,9 +397,6 @@ fun MeasureScreen(
         // 하단 버튼
         when (measureState) {
             MeasureState.MEASURING -> {
-                // "측정 종료" — 길게 누르기로 변경 (실수 방지)
-                var isLongPressing by remember { mutableStateOf(false) }
-
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -303,18 +408,18 @@ fun MeasureScreen(
                             }
                         ),
                     shape = RoundedCornerShape(16.dp),
-                    color = RacingYellow.copy(alpha = 0.8f)
+                    color = c.warning.copy(alpha = 0.8f)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxSize(),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Filled.Stop, contentDescription = null, tint = DarkBg)
+                        Icon(Icons.Filled.Stop, contentDescription = null, tint = c.background)
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            "길게 눌러 종료",
-                            color = DarkBg,
+                            stringResource(R.string.long_press_stop),
+                            color = c.background,
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp
                         )
@@ -323,18 +428,19 @@ fun MeasureScreen(
             }
 
             MeasureState.FINISHED -> {
-                // 공유 버튼
                 result?.let { r ->
+                    val shareTitle = stringResource(R.string.share_result)
                     OutlinedButton(
-                        onClick = { shareResult(context, r.elapsedSeconds, r.peakSpeed, r.splits) },
+                        onClick = { shareResult(context, r.elapsedSeconds, r.peakSpeed, r.splits, shareTitle, r.measureMode) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = c.textPrimary)
                     ) {
                         Icon(Icons.Filled.Share, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("결과 공유")
+                        Text(stringResource(R.string.share_result))
                     }
                 }
 
@@ -350,18 +456,18 @@ fun MeasureScreen(
                             .weight(1f)
                             .height(56.dp),
                         shape = RoundedCornerShape(16.dp)
-                    ) { Text("돌아가기") }
+                    ) { Text(stringResource(R.string.go_back)) }
                     Button(
                         onClick = { viewModel.startMeasurement() },
                         modifier = Modifier
                             .weight(1f)
                             .height(56.dp),
                         shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = RacingRed)
+                        colors = ButtonDefaults.buttonColors(containerColor = c.accent)
                     ) {
                         Icon(Icons.Filled.Refresh, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("다시 측정")
+                        Text(stringResource(R.string.retry))
                     }
                 }
             }
@@ -373,67 +479,185 @@ fun MeasureScreen(
                         .fillMaxWidth()
                         .height(56.dp),
                     shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = DarkCard)
-                ) { Text("취소") }
+                    colors = ButtonDefaults.buttonColors(containerColor = c.card)
+                ) { Text(stringResource(R.string.cancel)) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SpeedProgressBar(
+    currentSpeed: Double,
+    targetSpeed: Double,
+    modifier: Modifier = Modifier,
+    barColor: Color? = null
+) {
+    val c = LocalZero100Colors.current
+    val effectiveColor = barColor ?: c.info
+    val progress = (currentSpeed / targetSpeed).coerceIn(0.0, 1.0).toFloat()
+    val animatedProgress by animateFloatAsState(
+        targetValue = progress,
+        animationSpec = tween(100),
+        label = "speedProgress"
+    )
+
+    Canvas(modifier = modifier) {
+        val barHeight = size.height
+        val barWidth = size.width
+        val cornerRadius = barHeight / 2
+
+        drawRoundRect(
+            color = c.textTertiary.copy(alpha = 0.2f),
+            size = size,
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(cornerRadius)
+        )
+
+        if (animatedProgress > 0f) {
+            drawRoundRect(
+                brush = Brush.horizontalGradient(
+                    colors = listOf(
+                        effectiveColor.copy(alpha = 0.6f),
+                        effectiveColor
+                    ),
+                    endX = barWidth * animatedProgress
+                ),
+                size = size.copy(width = barWidth * animatedProgress),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(cornerRadius)
+            )
+        }
+    }
+}
+
+private fun shareResult(
+    context: Context,
+    elapsedSeconds: Double,
+    peakSpeed: Double,
+    splits: List<SplitTime>,
+    chooserTitle: String,
+    mode: MeasureMode = MeasureMode.ACCELERATION
+) {
+    val isDecel = mode == MeasureMode.DECELERATION
+    val sb = StringBuilder("Zero100")
+    for (split in splits) {
+        val label = if (isDecel) "${split.speedKmh.toInt()}-0km/h" else "0-${split.speedKmh.toInt()}km/h"
+        sb.append(" | $label: ${String.format("%.2f", split.elapsedSeconds)}s")
+    }
+    sb.append(" | Peak: ${String.format("%.1f", peakSpeed)}km/h")
+
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, sb.toString())
+    }
+    context.startActivity(Intent.createChooser(intent, chooserTitle))
+}
+
+/**
+ * 속도 구간 + 거리 구간 서브탭 (결과 화면용)
+ */
+@Composable
+private fun SplitAndDistanceTabs(
+    splits: List<SplitTime>,
+    distanceCheckpoints: List<DistanceCheckpoint>
+) {
+    val c = LocalZero100Colors.current
+    var subTab by remember { mutableIntStateOf(0) }
+    val hasDistCheckpoints = distanceCheckpoints.isNotEmpty()
+
+    if (hasDistCheckpoints) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FilterChip(
+                selected = subTab == 0,
+                onClick = { subTab = 0 },
+                label = { Text("속도 구간", fontSize = 12.sp) }
+            )
+            FilterChip(
+                selected = subTab == 1,
+                onClick = { subTab = 1 },
+                label = { Text("거리 구간", fontSize = 12.sp) }
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+    }
+
+    when (subTab) {
+        0 -> {
+            if (splits.isNotEmpty()) {
+                SplitTimesWithToggle(splits)
+            }
+        }
+        1 -> {
+            if (hasDistCheckpoints) {
+                DistanceCheckpointsDisplay(distanceCheckpoints)
             }
         }
     }
 }
 
 /**
- * 측정 결과를 텍스트로 공유
- */
-private fun shareResult(
-    context: Context,
-    elapsedSeconds: Double,
-    peakSpeed: Double,
-    splits: List<SplitTime>
-) {
-    val sb = StringBuilder("Zero100")
-    for (split in splits) {
-        sb.append(" | 0-${split.speedKmh.toInt()}km/h: ${String.format("%.2f", split.elapsedSeconds)}초")
-    }
-    sb.append(" | 최고속도: ${String.format("%.1f", peakSpeed)}km/h")
-
-    val intent = Intent(Intent.ACTION_SEND).apply {
-        type = "text/plain"
-        putExtra(Intent.EXTRA_TEXT, sb.toString())
-    }
-    context.startActivity(Intent.createChooser(intent, "결과 공유"))
-}
-
-/**
- * 구간 랩타임 표시 — 새 항목이 추가될 때 슬라이드인 애니메이션
+ * 속도 구간 표시 (주요 구간 기본, 전체 보기 토글)
  */
 @Composable
-private fun AnimatedSplitTimesDisplay(splits: List<SplitTime>) {
+private fun SplitTimesWithToggle(splits: List<SplitTime>) {
+    val c = LocalZero100Colors.current
+    var showAll by remember { mutableStateOf(false) }
+    val displaySplits = if (showAll) splits else splits.filter { it.isMajor }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = DarkCard),
+        colors = CardDefaults.cardColors(containerColor = c.card),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            splits.forEachIndexed { index, split ->
-                // 각 항목이 나타날 때 애니메이션
-                var visible by remember { mutableStateOf(false) }
-                LaunchedEffect(Unit) {
-                    visible = true
+            displaySplits.forEachIndexed { index, split ->
+                SplitTimeRow(split, index)
+            }
+
+            // 전체 구간 토글 (10km/h 단위가 있을 때만)
+            val hasMinorSplits = splits.any { !it.isMajor }
+            if (hasMinorSplits) {
+                Spacer(modifier = Modifier.height(4.dp))
+                TextButton(
+                    onClick = { showAll = !showAll },
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(vertical = 4.dp)
+                ) {
+                    Text(
+                        if (showAll) "주요 구간만 보기" else "전체 구간 보기 (${splits.size}개)",
+                        fontSize = 12.sp,
+                        color = c.textTertiary
+                    )
                 }
+            }
+        }
+    }
+}
+
+/**
+ * 거리 체크포인트 표시
+ */
+@Composable
+private fun DistanceCheckpointsDisplay(checkpoints: List<DistanceCheckpoint>) {
+    val c = LocalZero100Colors.current
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = c.card),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            checkpoints.forEachIndexed { index, cp ->
+                var visible by remember { mutableStateOf(false) }
+                LaunchedEffect(Unit) { visible = true }
 
                 AnimatedVisibility(
                     visible = visible,
                     enter = slideInVertically(
                         initialOffsetY = { it },
-                        animationSpec = tween(
-                            durationMillis = 300,
-                            delayMillis = index * 50
-                        )
-                    ) + fadeIn(
-                        animationSpec = tween(
-                            durationMillis = 300,
-                            delayMillis = index * 50
-                        )
-                    )
+                        animationSpec = tween(300, delayMillis = index * 50)
+                    ) + fadeIn(animationSpec = tween(300, delayMillis = index * 50))
                 ) {
                     Row(
                         modifier = Modifier
@@ -442,20 +666,28 @@ private fun AnimatedSplitTimesDisplay(splits: List<SplitTime>) {
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            "0-${split.speedKmh.toInt()} km/h",
-                            color = SpeedGray,
-                            fontSize = 14.sp
-                        )
-                        Text(
-                            String.format("%.2f초", split.elapsedSeconds),
-                            color = when {
-                                split.speedKmh <= 100.0 -> RacingGreen
-                                split.speedKmh <= 150.0 -> RacingYellow
-                                else -> RacingRed
-                            },
+                            cp.label,
+                            color = c.textSecondary,
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
+                            fontFamily = FontFamily.Monospace
                         )
+                        Row {
+                            Text(
+                                String.format("%.2fs", cp.elapsedMs / 1000.0),
+                                color = c.info,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                fontFamily = FontFamily.Monospace
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                String.format("%.0f km/h", cp.speedKmh),
+                                color = c.textTertiary,
+                                fontSize = 12.sp,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
                     }
                 }
             }
@@ -464,12 +696,97 @@ private fun AnimatedSplitTimesDisplay(splits: List<SplitTime>) {
 }
 
 @Composable
-private fun StatusBadge(state: MeasureState) {
+private fun SplitTimeRow(split: SplitTime, index: Int, isDecel: Boolean = false) {
+    val c = LocalZero100Colors.current
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
+
+    AnimatedVisibility(
+        visible = visible,
+        enter = slideInVertically(
+            initialOffsetY = { it },
+            animationSpec = tween(300, delayMillis = index * 50)
+        ) + fadeIn(animationSpec = tween(300, delayMillis = index * 50))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = if (split.isMajor) 6.dp else 2.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                if (isDecel) "${split.speedKmh.toInt()}-0 km/h" else "0-${split.speedKmh.toInt()} km/h",
+                color = if (split.isMajor) c.textPrimary else c.textSecondary,
+                fontSize = if (split.isMajor) 14.sp else 12.sp,
+                fontWeight = if (split.isMajor) FontWeight.Bold else FontWeight.Normal,
+                fontFamily = FontFamily.Monospace
+            )
+            Row {
+                Text(
+                    stringResource(R.string.split_time_format, split.elapsedSeconds),
+                    color = when {
+                        split.isMajor && split.speedKmh <= 100.0 -> c.info
+                        split.isMajor -> c.accent
+                        else -> c.textSecondary
+                    },
+                    fontWeight = if (split.isMajor) FontWeight.Bold else FontWeight.Normal,
+                    fontSize = if (split.isMajor) 14.sp else 12.sp,
+                    fontFamily = FontFamily.Monospace
+                )
+                if (split.distanceM > 0) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        String.format("%.0fm", split.distanceM),
+                        color = c.textTertiary,
+                        fontSize = if (split.isMajor) 12.sp else 11.sp,
+                        fontFamily = FontFamily.Monospace
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 측정 중 실시간 랩타임 표시 (주요 구간만)
+ */
+@Composable
+private fun AnimatedSplitTimesDisplay(splits: List<SplitTime>) {
+    val c = LocalZero100Colors.current
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = c.card),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            splits.forEachIndexed { index, split ->
+                SplitTimeRow(split, index)
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatusBadge(state: MeasureState, mode: MeasureMode = MeasureMode.ACCELERATION) {
+    val c = LocalZero100Colors.current
+    val isDecel = mode == MeasureMode.DECELERATION
     val (text, color, bgColor) = when (state) {
-        MeasureState.IDLE -> Triple("정차하세요", SpeedGray, DarkCard)
-        MeasureState.READY -> Triple("출발하세요!", RacingGreen, Color(0xFF1B5E20))
-        MeasureState.MEASURING -> Triple("측정 중...", RacingYellow, Color(0xFF4E3800))
-        MeasureState.FINISHED -> Triple("완료!", RacingGreen, Color(0xFF1B5E20))
+        MeasureState.IDLE -> if (isDecel) {
+            Triple(stringResource(R.string.status_decel_idle), c.textSecondary, c.card)
+        } else {
+            Triple(stringResource(R.string.status_stop), c.textSecondary, c.card)
+        }
+        MeasureState.READY -> if (isDecel) {
+            Triple(stringResource(R.string.status_decel_ready), c.danger, c.danger.copy(alpha = 0.15f))
+        } else {
+            Triple(stringResource(R.string.status_go), c.success, c.success.copy(alpha = 0.15f))
+        }
+        MeasureState.MEASURING -> if (isDecel) {
+            Triple(stringResource(R.string.status_decel_measuring), c.danger, c.danger.copy(alpha = 0.15f))
+        } else {
+            Triple(stringResource(R.string.status_measuring), c.info, c.info.copy(alpha = 0.15f))
+        }
+        MeasureState.FINISHED -> Triple(stringResource(R.string.status_done), c.success, c.success.copy(alpha = 0.15f))
     }
 
     val alpha = if (state == MeasureState.READY) {
@@ -497,6 +814,7 @@ private fun SpeedGraph(
     splits: List<SplitTime>,
     modifier: Modifier = Modifier
 ) {
+    val c = LocalZero100Colors.current
     if (points.size < 2) return
 
     val maxTime = points.maxOf { it.first }.toFloat()
@@ -504,7 +822,7 @@ private fun SpeedGraph(
 
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = DarkCard),
+        colors = CardDefaults.cardColors(containerColor = c.card),
         shape = RoundedCornerShape(12.dp)
     ) {
         Canvas(
@@ -516,26 +834,23 @@ private fun SpeedGraph(
             val h = size.height
             val padding = 4.dp.toPx()
 
-            // 구간 속도 라인
             for (split in splits) {
                 val y = h - (split.speedKmh.toFloat() / maxSpeed * (h - padding * 2)) - padding
-                drawLine(SpeedGray.copy(alpha = 0.3f), Offset(0f, y), Offset(w, y), 1f)
+                drawLine(c.textTertiary.copy(alpha = 0.3f), Offset(0f, y), Offset(w, y), 1f)
             }
 
-            // 속도 곡선
             val path = Path()
             points.forEachIndexed { i, (time, speed) ->
                 val x = (time.toFloat() / maxTime) * (w - padding * 2) + padding
                 val y = h - (speed.toFloat() / maxSpeed * (h - padding * 2)) - padding
                 if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
             }
-            drawPath(path, RacingGreen, style = Stroke(width = 3.dp.toPx()))
+            drawPath(path, c.info, style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round))
 
-            // 구간 도달 포인트
             for (split in splits) {
                 val x = (split.elapsedMs.toFloat() / maxTime) * (w - padding * 2) + padding
                 val y = h - (split.speedKmh.toFloat() / maxSpeed * (h - padding * 2)) - padding
-                drawCircle(RacingYellow, radius = 5.dp.toPx(), center = Offset(x, y))
+                drawCircle(c.warning, radius = 5.dp.toPx(), center = Offset(x, y))
             }
         }
     }
