@@ -41,7 +41,7 @@ interface MeasurementDao {
     @Query("SELECT * FROM measurements ORDER BY timestamp DESC")
     suspend fun getAll(): List<MeasurementRecord>
 
-    @Query("SELECT * FROM measurements ORDER BY elapsedMs ASC LIMIT 1")
+    @Query("SELECT * FROM measurements WHERE targetSpeed = 100.0 AND measureMode = 'ACCELERATION' AND elapsedMs > 0 ORDER BY elapsedMs ASC LIMIT 1")
     suspend fun getBest(): MeasurementRecord?
 
     @Query("SELECT * FROM measurements ORDER BY timestamp DESC LIMIT :limit")

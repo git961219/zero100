@@ -369,14 +369,22 @@ fun MeasureScreen(
                         TabRow(
                             selectedTabIndex = selectedTab,
                             containerColor = c.card,
-                            contentColor = c.info,
+                            contentColor = c.textPrimary,
+                            indicator = {
+                                TabRowDefaults.SecondaryIndicator(color = c.textPrimary)
+                            },
                             modifier = Modifier.clip(RoundedCornerShape(12.dp))
                         ) {
                             tabTitles.forEachIndexed { index, title ->
                                 Tab(
                                     selected = selectedTab == index,
                                     onClick = { selectedTab = index },
-                                    text = { Text(title) }
+                                    text = {
+                                        Text(
+                                            title,
+                                            color = if (selectedTab == index) c.textPrimary else c.textSecondary
+                                        )
+                                    }
                                 )
                             }
                         }
