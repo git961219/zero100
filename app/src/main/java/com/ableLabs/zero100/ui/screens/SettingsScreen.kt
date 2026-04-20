@@ -596,30 +596,29 @@ fun SettingsScreen(
                 }
 
                 // 확인 결과 메시지
-                if (updateCheckResult == true) {
+                if (updateCheckResult.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = c.success.copy(alpha = 0.15f),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                    val (icon, msg, color) = when {
+                        updateCheckResult == "latest" -> Triple(Icons.Filled.CheckCircle, stringResource(R.string.update_latest), c.success)
+                        updateCheckResult == "error" -> Triple(Icons.Filled.ErrorOutline, "업데이트 확인 실패. 네트워크를 확인해주세요.", c.warning)
+                        updateCheckResult.startsWith("update:") -> Triple(Icons.Filled.NewReleases, "새 버전 ${updateCheckResult.removePrefix("update:")} 사용 가능!", c.accent)
+                        else -> null
+                    } ?: Triple(Icons.Filled.Info, "", c.textSecondary)
+
+                    if (msg.isNotEmpty()) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = color.copy(alpha = 0.15f),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Icon(
-                                Icons.Filled.CheckCircle,
-                                contentDescription = null,
-                                tint = c.success,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                stringResource(R.string.update_latest),
-                                color = c.success,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium
-                            )
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(msg, color = color, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                            }
                         }
                     }
                 }

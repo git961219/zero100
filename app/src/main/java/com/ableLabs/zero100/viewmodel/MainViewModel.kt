@@ -311,9 +311,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         // 앱 시작 시 업데이트 확인 (5초 후)
         viewModelScope.launch {
             delay(5000)
-            val info = updateChecker.checkForUpdate()
-            if (info?.isNewer == true) {
-                _updateInfo.value = info
+            try {
+                android.util.Log.d("Zero100OTA", "Auto update check starting... current=${updateChecker.getCurrentVersion()}")
+                val info = updateChecker.checkForUpdate()
+                android.util.Log.d("Zero100OTA", "Auto check result: version=${info?.versionName}, isNewer=${info?.isNewer}, url=${info?.downloadUrl}")
+                if (info?.isNewer == true) {
+                    _updateInfo.value = info
+                    android.util.Log.d("Zero100OTA", "Update available! Showing banner.")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("Zero100OTA", "Auto check failed: ${e.message}", e)
             }
         }
     }
@@ -377,24 +384,29 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         _updateInfo.value = null
     }
 
-    // 수동 체크 후 결과: true=최신, false=확인 전, null=에러
-    private val _updateCheckResult = MutableStateFlow<Boolean?>(null)
-    val updateCheckResult: StateFlow<Boolean?> = _updateCheckResult
+    // 수동 체크 결과: "latest"=최신, "update:1.1.2"=업데이트 있음, "error"=실패, ""=미확인
+    private val _updateCheckResult = MutableStateFlow("")
+    val updateCheckResult: StateFlow<String> = _updateCheckResult
 
     fun checkForUpdateManual() {
         viewModelScope.launch {
             _updateChecking.value = true
-            _updateCheckResult.value = null
-            val info = updateChecker.checkForUpdate()
-            _updateChecking.value = false
-            if (info?.isNewer == true) {
-                _updateInfo.value = info
-                _updateCheckResult.value = false
-            } else if (info != null) {
-                _updateInfo.value = null
-                _updateCheckResult.value = true // 최신 버전
-            } else {
-                _updateCheckResult.value = null // 확인 실패
+            _updateCheckResult.value = ""
+            try {
+                val info = updateChecker.checkForUpdate()
+                _updateChecking.value = false
+                if (info?.isNewer == true) {
+                    _updateInfo.value = info
+                    _updateCheckResult.value = "update:${info.versionName}"
+                } else if (info != null) {
+                    _updateInfo.value = null
+                    _updateCheckResult.value = "latest"
+                } else {
+                    _updateCheckResult.value = "error"
+                }
+            } catch (e: Exception) {
+                _updateChecking.value = false
+                _updateCheckResult.value = "error"
             }
         }
     }
