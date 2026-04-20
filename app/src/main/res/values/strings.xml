@@ -188,4 +188,42 @@
     <string name="update_current_version">현재 버전</string>
     <string name="update_check">업데이트 확인</string>
     <string name="update_latest">최신 버전입니다</string>
+
+    <!-- G-force -->
+    <string name="peak_g_label">Peak G: %1$s G</string>
+
+    <!-- 복합 테스트 -->
+    <string name="mode_combined">복합</string>
+    <string name="start_combined_test">복합 테스트</string>
+    <string name="combined_accel">가속</string>
+    <string name="combined_decel">감속</string>
+    <string name="combined_total">총합</string>
+    <string name="combined_phase_accel">가속 구간</string>
+    <string name="combined_phase_decel">감속 구간</string>
+
+    <!-- CSV/GPX 내보내기 -->
+    <string name="export_csv">CSV 내보내기</string>
+    <string name="export_gpx">GPX 내보내기</string>
+
+    <!-- 차량 프로필 -->
+    <string name="vehicle_management">차량 관리</string>
+    <string name="vehicle_management_desc">측정 기록에 차량 정보를 연결합니다.</string>
+    <string name="no_vehicles">등록된 차량이 없습니다</string>
+    <string name="add_vehicle">차량 추가</string>
+    <string name="edit_vehicle">차량 편집</string>
+    <string name="vehicle_name">이름 (필수)</string>
+    <string name="vehicle_make">제조사</string>
+    <string name="vehicle_model">모델</string>
+    <string name="vehicle_year">연식</string>
+    <string name="vehicle_notes">메모</string>
+    <string name="save">저장</string>
+
+    <!-- 런 비교 -->
+    <string name="compare">비교</string>
+    <string name="compare_select">비교 선택 (%d/2)</string>
+    <string name="compare_title">런 비교</string>
+    <string name="compare_graph">속도-시간 그래프</string>
+    <string name="compare_splits">구간별 비교</string>
+    <string name="compare_speed_col">속도</string>
+    <string name="compare_diff_col">차이</string>
 </resources>

@@ -40,6 +40,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ableLabs.zero100.R
+import com.ableLabs.zero100.gps.GforceData
+import com.ableLabs.zero100.measurement.CombinedPhase
 import com.ableLabs.zero100.measurement.DistanceCheckpoint
 import com.ableLabs.zero100.measurement.MeasureMode
 import com.ableLabs.zero100.measurement.MeasureState
@@ -114,7 +116,10 @@ fun MeasureScreen(
     val targetSpeed by viewModel.targetSpeedSetting.collectAsState()
     val measureMode by viewModel.measureMode.collectAsState()
     val decelStartSpeed by viewModel.decelStartSpeed.collectAsState()
+    val gforceData by viewModel.gforceManager.gforceData.collectAsState()
+    val combinedPhase by viewModel.engine.combinedPhase.collectAsState()
     val isDecel = measureMode == MeasureMode.DECELERATION
+    val isCombined = measureMode == MeasureMode.COMBINED
 
     var displayElapsed by remember { mutableLongStateOf(0L) }
     LaunchedEffect(measureState) {
@@ -175,15 +180,23 @@ fun MeasureScreen(
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back), tint = c.textPrimary)
             }
             Text(
-                if (isDecel) "${decelStartSpeed}-0 km/h" else "0-${targetSpeed} km/h",
+                when {
+                    isCombined -> "0-${targetSpeed}-0 km/h"
+                    isDecel -> "${decelStartSpeed}-0 km/h"
+                    else -> "0-${targetSpeed} km/h"
+                },
                 style = MaterialTheme.typography.titleMedium.copy(fontFamily = FontFamily.Monospace),
-                color = if (isDecel) c.danger else c.textPrimary
+                color = when {
+                    isCombined -> c.accent
+                    isDecel -> c.danger
+                    else -> c.textPrimary
+                }
             )
             Spacer(modifier = Modifier.width(48.dp))
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-        StatusBadge(measureState, measureMode)
+        StatusBadge(measureState, measureMode, if (isCombined) combinedPhase else null)
         Spacer(modifier = Modifier.height(24.dp))
 
         when (measureState) {
@@ -195,7 +208,11 @@ fun MeasureScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     result?.let { r ->
-                        val resultColor = if (isDecel) c.danger else c.info
+                        val resultColor = when {
+                            isDecel -> c.danger
+                            isCombined -> c.accent
+                            else -> c.info
+                        }
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -240,6 +257,68 @@ fun MeasureScreen(
                                     fontSize = 14.sp,
                                     fontFamily = FontFamily.Monospace
                                 )
+
+                                // Peak G 표시
+                                if (r.peakG > 0.05f) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        stringResource(R.string.peak_g_label, String.format("%.2f", r.peakG)),
+                                        color = c.warning,
+                                        fontSize = 14.sp,
+                                        fontFamily = FontFamily.Monospace
+                                    )
+                                }
+
+                                // 복합 테스트: 구간별 시간
+                                if (r.measureMode == MeasureMode.COMBINED && r.accelMs > 0) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceEvenly
+                                    ) {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(stringResource(R.string.combined_accel), color = c.textSecondary, fontSize = 12.sp)
+                                            Text(
+                                                String.format("%.2fs", r.accelMs / 1000.0),
+                                                color = c.info,
+                                                fontWeight = FontWeight.Bold,
+                                                fontFamily = FontFamily.Monospace
+                                            )
+                                            if (r.accelDistance > 0) {
+                                                Text(
+                                                    String.format("%.0fm", r.accelDistance),
+                                                    color = c.textTertiary,
+                                                    fontSize = 11.sp
+                                                )
+                                            }
+                                        }
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(stringResource(R.string.combined_decel), color = c.textSecondary, fontSize = 12.sp)
+                                            Text(
+                                                String.format("%.2fs", r.decelMs / 1000.0),
+                                                color = c.danger,
+                                                fontWeight = FontWeight.Bold,
+                                                fontFamily = FontFamily.Monospace
+                                            )
+                                            if (r.decelDistance > 0) {
+                                                Text(
+                                                    String.format("%.0fm", r.decelDistance),
+                                                    color = c.textTertiary,
+                                                    fontSize = 11.sp
+                                                )
+                                            }
+                                        }
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(stringResource(R.string.combined_total), color = c.textSecondary, fontSize = 12.sp)
+                                            Text(
+                                                String.format("%.2fs", r.elapsedSeconds),
+                                                color = c.accent,
+                                                fontWeight = FontWeight.Bold,
+                                                fontFamily = FontFamily.Monospace
+                                            )
+                                        }
+                                    }
+                                }
 
                                 if (r.distanceM > 0 && !isDecel) {
                                     Spacer(modifier = Modifier.height(4.dp))
@@ -325,9 +404,32 @@ fun MeasureScreen(
                 Text(
                     text = String.format("%.2f", displayElapsed / 1000.0),
                     style = TimerDisplayStyle,
-                    color = if (isDecel) c.danger else c.info
+                    color = when {
+                        isCombined && combinedPhase == CombinedPhase.DECEL -> c.danger
+                        isCombined -> c.info
+                        isDecel -> c.danger
+                        else -> c.info
+                    }
                 )
                 Text(stringResource(R.string.seconds), style = SpeedUnitStyle.copy(color = c.textSecondary))
+
+                // 복합 모드: 현재 단계 표시
+                if (isCombined) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (combinedPhase == CombinedPhase.ACCEL) c.info.copy(alpha = 0.15f) else c.danger.copy(alpha = 0.15f)
+                    ) {
+                        Text(
+                            if (combinedPhase == CombinedPhase.ACCEL) stringResource(R.string.combined_phase_accel)
+                            else stringResource(R.string.combined_phase_decel),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                            color = if (combinedPhase == CombinedPhase.ACCEL) c.info else c.danger,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -361,6 +463,10 @@ fun MeasureScreen(
                     color = c.textPrimary.copy(alpha = 0.7f)
                 )
                 Text("km/h", color = c.textSecondary, fontSize = 14.sp)
+
+                // G-force 실시간 표시
+                Spacer(modifier = Modifier.height(4.dp))
+                GforceDisplay(gforceData)
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -767,24 +873,50 @@ private fun AnimatedSplitTimesDisplay(splits: List<SplitTime>) {
 }
 
 @Composable
-private fun StatusBadge(state: MeasureState, mode: MeasureMode = MeasureMode.ACCELERATION) {
+private fun GforceDisplay(gforceData: GforceData) {
+    val c = LocalZero100Colors.current
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            String.format("%.2fG", gforceData.longitudinal),
+            color = if (gforceData.longitudinal >= 0) c.info else c.danger,
+            fontSize = 14.sp,
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Medium
+        )
+        Text(
+            String.format("L%.2fG", kotlin.math.abs(gforceData.lateral)),
+            color = c.textSecondary,
+            fontSize = 12.sp,
+            fontFamily = FontFamily.Monospace
+        )
+    }
+}
+
+@Composable
+private fun StatusBadge(state: MeasureState, mode: MeasureMode = MeasureMode.ACCELERATION, combinedPhase: CombinedPhase? = null) {
     val c = LocalZero100Colors.current
     val isDecel = mode == MeasureMode.DECELERATION
+    val isCombined = mode == MeasureMode.COMBINED
     val (text, color, bgColor) = when (state) {
-        MeasureState.IDLE -> if (isDecel) {
-            Triple(stringResource(R.string.status_decel_idle), c.textSecondary, c.card)
-        } else {
-            Triple(stringResource(R.string.status_stop), c.textSecondary, c.card)
+        MeasureState.IDLE -> when {
+            isCombined -> Triple(stringResource(R.string.status_stop), c.textSecondary, c.card)
+            isDecel -> Triple(stringResource(R.string.status_decel_idle), c.textSecondary, c.card)
+            else -> Triple(stringResource(R.string.status_stop), c.textSecondary, c.card)
         }
-        MeasureState.READY -> if (isDecel) {
-            Triple(stringResource(R.string.status_decel_ready), c.danger, c.danger.copy(alpha = 0.15f))
-        } else {
-            Triple(stringResource(R.string.status_go), c.success, c.success.copy(alpha = 0.15f))
+        MeasureState.READY -> when {
+            isCombined -> Triple(stringResource(R.string.status_go), c.success, c.success.copy(alpha = 0.15f))
+            isDecel -> Triple(stringResource(R.string.status_decel_ready), c.danger, c.danger.copy(alpha = 0.15f))
+            else -> Triple(stringResource(R.string.status_go), c.success, c.success.copy(alpha = 0.15f))
         }
-        MeasureState.MEASURING -> if (isDecel) {
-            Triple(stringResource(R.string.status_decel_measuring), c.danger, c.danger.copy(alpha = 0.15f))
-        } else {
-            Triple(stringResource(R.string.status_measuring), c.info, c.info.copy(alpha = 0.15f))
+        MeasureState.MEASURING -> when {
+            isCombined && combinedPhase == CombinedPhase.DECEL ->
+                Triple(stringResource(R.string.status_decel_measuring), c.danger, c.danger.copy(alpha = 0.15f))
+            isCombined -> Triple(stringResource(R.string.status_measuring), c.info, c.info.copy(alpha = 0.15f))
+            isDecel -> Triple(stringResource(R.string.status_decel_measuring), c.danger, c.danger.copy(alpha = 0.15f))
+            else -> Triple(stringResource(R.string.status_measuring), c.info, c.info.copy(alpha = 0.15f))
         }
         MeasureState.FINISHED -> Triple(stringResource(R.string.status_done), c.success, c.success.copy(alpha = 0.15f))
     }

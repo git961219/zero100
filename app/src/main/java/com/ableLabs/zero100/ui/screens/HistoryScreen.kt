@@ -37,12 +37,15 @@ import java.util.*
 fun HistoryScreen(
     viewModel: MainViewModel,
     onBack: () -> Unit,
-    onNavigateToDetail: (Long) -> Unit = {}
+    onNavigateToDetail: (Long) -> Unit = {},
+    onNavigateToCompare: (Long, Long) -> Unit = { _, _ -> }
 ) {
     val c = LocalZero100Colors.current
     val records by viewModel.records.collectAsState()
     val bestRecord by viewModel.bestRecord.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var compareMode by remember { mutableStateOf(false) }
+    val selectedForCompare = remember { mutableStateListOf<Long>() }
 
     Column(
         modifier = Modifier
@@ -51,14 +54,43 @@ fun HistoryScreen(
             .padding(WindowInsets.systemBars.asPaddingValues())
     ) {
         TopAppBar(
-            title = { Text(stringResource(R.string.history_title)) },
+            title = {
+                Text(
+                    if (compareMode) stringResource(R.string.compare_select, selectedForCompare.size)
+                    else stringResource(R.string.history_title)
+                )
+            },
             navigationIcon = {
-                IconButton(onClick = onBack) {
+                IconButton(onClick = {
+                    if (compareMode) {
+                        compareMode = false
+                        selectedForCompare.clear()
+                    } else {
+                        onBack()
+                    }
+                }) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                 }
             },
             actions = {
-                if (records.isNotEmpty()) {
+                if (records.size >= 2 && !compareMode) {
+                    IconButton(onClick = {
+                        compareMode = true
+                        selectedForCompare.clear()
+                    }) {
+                        Icon(Icons.Filled.CompareArrows, contentDescription = stringResource(R.string.compare), tint = c.info)
+                    }
+                }
+                if (compareMode && selectedForCompare.size == 2) {
+                    IconButton(onClick = {
+                        onNavigateToCompare(selectedForCompare[0], selectedForCompare[1])
+                        compareMode = false
+                        selectedForCompare.clear()
+                    }) {
+                        Icon(Icons.Filled.Check, contentDescription = stringResource(R.string.compare), tint = c.success)
+                    }
+                }
+                if (records.isNotEmpty() && !compareMode) {
                     IconButton(onClick = { showDeleteDialog = true }) {
                         Icon(Icons.Filled.DeleteSweep, contentDescription = stringResource(R.string.delete_all))
                     }
@@ -99,12 +131,25 @@ fun HistoryScreen(
             ) {
                 itemsIndexed(records) { index, record ->
                     val isBest = bestRecord?.id == record.id
+                    val isSelectedForCompare = record.id in selectedForCompare
                     RecordCard(
                         record = record,
                         rank = index + 1,
                         isBest = isBest,
                         onDelete = { viewModel.deleteRecord(record) },
-                        onClick = { onNavigateToDetail(record.id) }
+                        onClick = {
+                            if (compareMode) {
+                                if (isSelectedForCompare) {
+                                    selectedForCompare.remove(record.id)
+                                } else if (selectedForCompare.size < 2) {
+                                    selectedForCompare.add(record.id)
+                                }
+                            } else {
+                                onNavigateToDetail(record.id)
+                            }
+                        },
+                        compareMode = compareMode,
+                        isSelectedForCompare = isSelectedForCompare
                     )
                 }
             }
@@ -140,7 +185,9 @@ private fun RecordCard(
     rank: Int,
     isBest: Boolean,
     onDelete: () -> Unit,
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
+    compareMode: Boolean = false,
+    isSelectedForCompare: Boolean = false
 ) {
     val c = LocalZero100Colors.current
     val dateFormat = remember { SimpleDateFormat("yyyy.MM.dd HH:mm", Locale.KOREA) }
@@ -152,16 +199,30 @@ private fun RecordCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .then(
+                if (isSelectedForCompare) Modifier.border(2.dp, c.info, RoundedCornerShape(16.dp))
+                else Modifier
+            )
             .clickable { onClick() },
         colors = CardDefaults.cardColors(
-            containerColor = if (isBest) c.success.copy(alpha = 0.1f) else c.card
+            containerColor = when {
+                isSelectedForCompare -> c.info.copy(alpha = 0.1f)
+                isBest -> c.success.copy(alpha = 0.1f)
+                else -> c.card
+            }
         ),
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             val isDecelRecord = record.measureMode == "DECELERATION"
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (isBest) {
+                if (compareMode) {
+                    Checkbox(
+                        checked = isSelectedForCompare,
+                        onCheckedChange = { onClick() },
+                        colors = CheckboxDefaults.colors(checkedColor = c.info)
+                    )
+                } else if (isBest) {
                     Icon(
                         Icons.Filled.EmojiEvents,
                         contentDescription = null,

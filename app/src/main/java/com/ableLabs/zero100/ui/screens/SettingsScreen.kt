@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import kotlinx.coroutines.launch
@@ -21,10 +22,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.os.LocaleListCompat
 import com.ableLabs.zero100.R
+import com.ableLabs.zero100.data.Vehicle
 import com.ableLabs.zero100.ui.theme.*
 import com.ableLabs.zero100.viewmodel.GpsSource
 import com.ableLabs.zero100.viewmodel.MainViewModel
-import androidx.compose.material3.CircularProgressIndicator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,6 +44,11 @@ fun SettingsScreen(
     val updateInfo by viewModel.updateInfo.collectAsState()
     val updateProgress by viewModel.updateProgress.collectAsState()
     val updateChecking by viewModel.updateChecking.collectAsState()
+    val vehicles by viewModel.vehicles.collectAsState()
+    val selectedVehicleId by viewModel.selectedVehicleId.collectAsState()
+
+    var showAddVehicleDialog by remember { mutableStateOf(false) }
+    var editingVehicle by remember { mutableStateOf<Vehicle?>(null) }
 
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("zero100_settings", Context.MODE_PRIVATE) }
@@ -332,6 +338,81 @@ fun SettingsScreen(
 
             HorizontalDivider(color = c.card)
 
+            // ── 차량 관리 ──
+            Text(
+                stringResource(R.string.vehicle_management),
+                color = c.textPrimary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp
+            )
+            Text(
+                stringResource(R.string.vehicle_management_desc),
+                color = c.textSecondary,
+                fontSize = 13.sp
+            )
+
+            if (vehicles.isEmpty()) {
+                Text(
+                    stringResource(R.string.no_vehicles),
+                    color = c.textTertiary,
+                    fontSize = 13.sp
+                )
+            } else {
+                vehicles.forEach { vehicle ->
+                    val isSelected = vehicle.id == selectedVehicleId
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isSelected) c.info.copy(alpha = 0.1f) else c.card
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = isSelected,
+                                onClick = { viewModel.setDefaultVehicle(if (isSelected) 0L else vehicle.id) },
+                                colors = RadioButtonDefaults.colors(selectedColor = c.info)
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(vehicle.name, color = c.textPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                val sub = listOfNotNull(
+                                    vehicle.make.takeIf { it.isNotBlank() },
+                                    vehicle.model.takeIf { it.isNotBlank() },
+                                    vehicle.year.takeIf { it > 0 }?.toString()
+                                ).joinToString(" ")
+                                if (sub.isNotBlank()) {
+                                    Text(sub, color = c.textSecondary, fontSize = 12.sp)
+                                }
+                            }
+                            IconButton(onClick = { editingVehicle = vehicle }) {
+                                Icon(Icons.Filled.Edit, contentDescription = null, tint = c.textSecondary, modifier = Modifier.size(18.dp))
+                            }
+                            IconButton(onClick = { viewModel.deleteVehicle(vehicle) }) {
+                                Icon(Icons.Filled.Close, contentDescription = null, tint = c.danger, modifier = Modifier.size(18.dp))
+                            }
+                        }
+                    }
+                }
+            }
+
+            Button(
+                onClick = { showAddVehicleDialog = true },
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = c.card),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = null, tint = c.textPrimary)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.add_vehicle), color = c.textPrimary)
+            }
+
+            HorizontalDivider(color = c.card)
+
             // ── GPS 정보 ──
             Text(
                 stringResource(R.string.gps_info),
@@ -519,6 +600,109 @@ fun SettingsScreen(
     }
 
     } // Scaffold
+
+    // 차량 추가 다이얼로그
+    if (showAddVehicleDialog) {
+        VehicleEditDialog(
+            vehicle = null,
+            onDismiss = { showAddVehicleDialog = false },
+            onSave = { name, make, model, year, notes ->
+                viewModel.addVehicle(name, make, model, year, notes)
+                showAddVehicleDialog = false
+            }
+        )
+    }
+
+    // 차량 편집 다이얼로그
+    editingVehicle?.let { v ->
+        VehicleEditDialog(
+            vehicle = v,
+            onDismiss = { editingVehicle = null },
+            onSave = { name, make, model, year, notes ->
+                viewModel.updateVehicle(v.copy(name = name, make = make, model = model, year = year, notes = notes))
+                editingVehicle = null
+            }
+        )
+    }
+}
+
+@Composable
+private fun VehicleEditDialog(
+    vehicle: Vehicle?,
+    onDismiss: () -> Unit,
+    onSave: (name: String, make: String, model: String, year: Int, notes: String) -> Unit
+) {
+    var name by remember { mutableStateOf(vehicle?.name ?: "") }
+    var make by remember { mutableStateOf(vehicle?.make ?: "") }
+    var model by remember { mutableStateOf(vehicle?.model ?: "") }
+    var yearStr by remember { mutableStateOf(if ((vehicle?.year ?: 0) > 0) vehicle!!.year.toString() else "") }
+    var notes by remember { mutableStateOf(vehicle?.notes ?: "") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                if (vehicle == null) stringResource(R.string.add_vehicle)
+                else stringResource(R.string.edit_vehicle)
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(stringResource(R.string.vehicle_name)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = make,
+                    onValueChange = { make = it },
+                    label = { Text(stringResource(R.string.vehicle_make)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = model,
+                    onValueChange = { model = it },
+                    label = { Text(stringResource(R.string.vehicle_model)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = yearStr,
+                    onValueChange = { yearStr = it.filter { c -> c.isDigit() }.take(4) },
+                    label = { Text(stringResource(R.string.vehicle_year)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { notes = it },
+                    label = { Text(stringResource(R.string.vehicle_notes)) },
+                    maxLines = 2,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (name.isNotBlank()) {
+                        onSave(name.trim(), make.trim(), model.trim(), yearStr.toIntOrNull() ?: 0, notes.trim())
+                    }
+                },
+                enabled = name.isNotBlank()
+            ) {
+                Text(stringResource(R.string.save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
 }
 
 @Composable

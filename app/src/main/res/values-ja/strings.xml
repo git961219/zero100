@@ -178,4 +178,42 @@
     <string name="update_current_version">現在のバージョン</string>
     <string name="update_check">アップデートを確認</string>
     <string name="update_latest">最新バージョンです</string>
+
+    <!-- G-force -->
+    <string name="peak_g_label">ピークG: %1$s G</string>
+
+    <!-- 複合テスト -->
+    <string name="mode_combined">複合</string>
+    <string name="start_combined_test">複合テスト</string>
+    <string name="combined_accel">加速</string>
+    <string name="combined_decel">減速</string>
+    <string name="combined_total">合計</string>
+    <string name="combined_phase_accel">加速区間</string>
+    <string name="combined_phase_decel">減速区間</string>
+
+    <!-- CSV/GPXエクスポート -->
+    <string name="export_csv">CSVエクスポート</string>
+    <string name="export_gpx">GPXエクスポート</string>
+
+    <!-- 車両プロフィール -->
+    <string name="vehicle_management">車両管理</string>
+    <string name="vehicle_management_desc">測定記録に車両情報を紐付けます。</string>
+    <string name="no_vehicles">登録された車両がありません</string>
+    <string name="add_vehicle">車両追加</string>
+    <string name="edit_vehicle">車両編集</string>
+    <string name="vehicle_name">名前（必須）</string>
+    <string name="vehicle_make">メーカー</string>
+    <string name="vehicle_model">モデル</string>
+    <string name="vehicle_year">年式</string>
+    <string name="vehicle_notes">メモ</string>
+    <string name="save">保存</string>
+
+    <!-- ラン比較 -->
+    <string name="compare">比較</string>
+    <string name="compare_select">比較選択 (%d/2)</string>
+    <string name="compare_title">ラン比較</string>
+    <string name="compare_graph">速度-時間グラフ</string>
+    <string name="compare_splits">区間別比較</string>
+    <string name="compare_speed_col">速度</string>
+    <string name="compare_diff_col">差</string>
 </resources>

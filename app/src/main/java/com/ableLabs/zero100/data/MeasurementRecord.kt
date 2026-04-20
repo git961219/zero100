@@ -22,7 +22,13 @@ data class MeasurementRecord(
     val avgSatellites: Int = 0,         // 측정 중 평균 위성 수
     val updateRateHz: Int = 0,          // 측정 중 평균 수신률 (Hz)
     val distanceCheckpointsJson: String = "", // JSON: [{"dist":18.3,"label":"60ft","ms":1200,"spd":45.2}, ...]
-    val measureMode: String = "ACCELERATION" // "ACCELERATION" or "DECELERATION"
+    val measureMode: String = "ACCELERATION", // "ACCELERATION", "DECELERATION", "COMBINED"
+    val peakG: Float = 0f,             // 피크 G-force
+    val vehicleId: Long = 0,           // 차량 프로필 ID (0 = 미지정)
+    val accelMs: Long = 0,             // 복합: 가속 구간 시간
+    val decelMs: Long = 0,             // 복합: 감속 구간 시간
+    val accelDistance: Double = 0.0,    // 복합: 가속 구간 거리
+    val decelDistance: Double = 0.0     // 복합: 감속 구간 거리
 ) {
     val elapsedSeconds: Double get() = elapsedMs / 1000.0
 
@@ -118,7 +124,73 @@ val MIGRATION_7_8 = object : Migration(7, 8) {
     }
 }
 
-@Database(entities = [MeasurementRecord::class], version = 8)
+/**
+ * version 8 -> 9: peakG, vehicleId, accelMs, decelMs, accelDistance, decelDistance 추가 + vehicles 테이블
+ */
+val MIGRATION_8_9 = object : Migration(8, 9) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE measurements ADD COLUMN peakG REAL NOT NULL DEFAULT 0.0")
+        db.execSQL("ALTER TABLE measurements ADD COLUMN vehicleId INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE measurements ADD COLUMN accelMs INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE measurements ADD COLUMN decelMs INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE measurements ADD COLUMN accelDistance REAL NOT NULL DEFAULT 0.0")
+        db.execSQL("ALTER TABLE measurements ADD COLUMN decelDistance REAL NOT NULL DEFAULT 0.0")
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS vehicles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                name TEXT NOT NULL,
+                make TEXT NOT NULL DEFAULT '',
+                model TEXT NOT NULL DEFAULT '',
+                year INTEGER NOT NULL DEFAULT 0,
+                notes TEXT NOT NULL DEFAULT '',
+                isDefault INTEGER NOT NULL DEFAULT 0
+            )
+        """)
+    }
+}
+
+// ── 차량 프로필 ──
+
+@Entity(tableName = "vehicles")
+data class Vehicle(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,           // "내 스팅어"
+    val make: String = "",      // "KIA"
+    val model: String = "",     // "Stinger GT"
+    val year: Int = 0,          // 2024
+    val notes: String = "",
+    val isDefault: Boolean = false
+)
+
+@Dao
+interface VehicleDao {
+    @Query("SELECT * FROM vehicles ORDER BY isDefault DESC, name ASC")
+    suspend fun getAll(): List<Vehicle>
+
+    @Query("SELECT * FROM vehicles WHERE isDefault = 1 LIMIT 1")
+    suspend fun getDefault(): Vehicle?
+
+    @Query("SELECT * FROM vehicles WHERE id = :id")
+    suspend fun getById(id: Long): Vehicle?
+
+    @Insert
+    suspend fun insert(vehicle: Vehicle): Long
+
+    @Update
+    suspend fun update(vehicle: Vehicle)
+
+    @Delete
+    suspend fun delete(vehicle: Vehicle)
+
+    @Query("UPDATE vehicles SET isDefault = 0")
+    suspend fun clearAllDefaults()
+
+    @Query("UPDATE vehicles SET isDefault = 1 WHERE id = :id")
+    suspend fun setDefault(id: Long)
+}
+
+@Database(entities = [MeasurementRecord::class, Vehicle::class], version = 9)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun measurementDao(): MeasurementDao
+    abstract fun vehicleDao(): VehicleDao
 }

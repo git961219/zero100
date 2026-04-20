@@ -14,7 +14,8 @@ enum class MeasureState {
 
 enum class MeasureMode {
     ACCELERATION,  // 가속: 정차 → 목표속도
-    DECELERATION   // 감속: 목표속도 → 정차
+    DECELERATION,  // 감속: 목표속도 → 정차
+    COMBINED       // 복합: 정차 → 목표속도 → 정차 (0-100-0)
 }
 
 data class SplitTime(
@@ -36,6 +37,14 @@ data class DistanceCheckpoint(
     val speedKmh: Double      // 해당 거리 도달 시 속도
 )
 
+/**
+ * 복합 테스트(COMBINED)에서의 현재 단계
+ */
+enum class CombinedPhase {
+    ACCEL,  // 가속 단계
+    DECEL   // 감속 단계
+}
+
 data class MeasureResult(
     val targetSpeed: Double,        // 최종 목표 속도 (km/h)
     val elapsedMs: Long,            // 최종 소요 시간 (ms)
@@ -47,7 +56,13 @@ data class MeasureResult(
     val distanceBySpeed: Double = 0.0,  // 속도 적분 거리 (m)
     val distanceByGps: Double = 0.0,    // GPS 좌표 거리 (m)
     val distanceCheckpoints: List<DistanceCheckpoint> = emptyList(),
-    val measureMode: MeasureMode = MeasureMode.ACCELERATION  // 가속/감속 모드
+    val measureMode: MeasureMode = MeasureMode.ACCELERATION,
+    val peakG: Float = 0f,              // 피크 G-force
+    // 복합 테스트 전용
+    val accelMs: Long = 0,              // 가속 구간 시간 (ms)
+    val decelMs: Long = 0,              // 감속 구간 시간 (ms)
+    val accelDistance: Double = 0.0,     // 가속 구간 거리 (m)
+    val decelDistance: Double = 0.0      // 감속 구간 거리 (m)
 ) {
     val elapsedSeconds: Double get() = elapsedMs / 1000.0
 
@@ -143,6 +158,15 @@ class Zero100Engine {
     var measureMode: MeasureMode = MeasureMode.ACCELERATION
     var decelStartSpeed: Double = 100.0  // 감속 시작 속도 (km/h)
 
+    // 복합 테스트 상태
+    private val _combinedPhase = MutableStateFlow(CombinedPhase.ACCEL)
+    val combinedPhase: StateFlow<CombinedPhase> = _combinedPhase
+    private var accelEndTime: Long = 0L    // 가속 완료 시점
+    private var accelEndDistance: Double = 0.0
+
+    // G-force 피크 (외부에서 set)
+    var peakG: Float = 0f
+
     private var startTime: Long = 0L
     private var peakSpeed: Double = 0.0
     private val speedLog = java.util.concurrent.CopyOnWriteArrayList<SpeedPoint>()
@@ -163,6 +187,7 @@ class Zero100Engine {
         _liveDistanceCheckpoints.value = emptyList()
         _liveDistance.value = 0.0
         peakSpeed = 0.0
+        peakG = 0f
         speedLog.clear()
         splits.clear()
         trackPoints.clear()
@@ -170,6 +195,9 @@ class Zero100Engine {
         recordedSplits.clear()
         recordedCheckpoints.clear()
         currentDistance = 0.0
+        _combinedPhase.value = CombinedPhase.ACCEL
+        accelEndTime = 0L
+        accelEndDistance = 0.0
     }
 
     /**
@@ -181,8 +209,14 @@ class Zero100Engine {
         val elapsed = System.currentTimeMillis() - startTime
         val logList = speedLog.toList()
         val tpList = trackPoints.toList()
+
+        val accelTime = if (measureMode == MeasureMode.COMBINED && accelEndTime > 0) accelEndTime - startTime else 0L
+        val decelTime = if (measureMode == MeasureMode.COMBINED && accelEndTime > 0) elapsed - accelTime else 0L
+
         _result.value = MeasureResult(
-            targetSpeed = if (measureMode == MeasureMode.DECELERATION) decelStartSpeed else peakSpeed,
+            targetSpeed = if (measureMode == MeasureMode.DECELERATION) decelStartSpeed
+                          else if (measureMode == MeasureMode.COMBINED) targetSpeed
+                          else peakSpeed,
             elapsedMs = elapsed,
             peakSpeed = peakSpeed,
             speedLog = logList,
@@ -191,7 +225,12 @@ class Zero100Engine {
             distanceBySpeed = calcDistanceBySpeed(logList),
             distanceByGps = calcDistanceByGps(tpList),
             distanceCheckpoints = distanceCheckpoints.toList(),
-            measureMode = measureMode
+            measureMode = measureMode,
+            peakG = peakG,
+            accelMs = accelTime,
+            decelMs = decelTime,
+            accelDistance = accelEndDistance,
+            decelDistance = (currentDistance - accelEndDistance).coerceAtLeast(0.0)
         )
         _state.value = MeasureState.FINISHED
     }
@@ -205,10 +244,10 @@ class Zero100Engine {
 
         _currentSpeed.value = data.speedKmh
 
-        if (measureMode == MeasureMode.DECELERATION) {
-            onGpsDataDeceleration(data)
-        } else {
-            onGpsDataAcceleration(data)
+        when (measureMode) {
+            MeasureMode.DECELERATION -> onGpsDataDeceleration(data)
+            MeasureMode.COMBINED -> onGpsDataCombined(data)
+            else -> onGpsDataAcceleration(data)
         }
     }
 
@@ -306,7 +345,8 @@ class Zero100Engine {
                         distanceBySpeed = calcDistanceBySpeed(logList),
                         distanceByGps = calcDistanceByGps(tpList),
                         distanceCheckpoints = distanceCheckpoints.toList(),
-                        measureMode = MeasureMode.ACCELERATION
+                        measureMode = MeasureMode.ACCELERATION,
+                        peakG = peakG
                     )
                     _state.value = MeasureState.FINISHED
                 }
@@ -435,9 +475,154 @@ class Zero100Engine {
                         distanceBySpeed = calcDistanceBySpeed(logList),
                         distanceByGps = calcDistanceByGps(tpList),
                         distanceCheckpoints = distanceCheckpoints.toList(),
-                        measureMode = MeasureMode.DECELERATION
+                        measureMode = MeasureMode.DECELERATION,
+                        peakG = peakG
                     )
                     _state.value = MeasureState.FINISHED
+                }
+            }
+
+            MeasureState.FINISHED -> {
+                // arm() 호출 전까지 유지
+            }
+        }
+    }
+
+    /**
+     * 복합 모드 상태 머신 (0-100-0):
+     * IDLE -> 정차 감지 -> READY
+     * READY -> 출발 -> MEASURING (가속 단계)
+     * 가속 단계에서 목표속도 도달 -> 자동으로 감속 단계 전환
+     * 감속 단계에서 정지 -> FINISHED
+     */
+    private fun onGpsDataCombined(data: GpsData) {
+        when (_state.value) {
+            MeasureState.IDLE -> {
+                if (data.speedKmh <= STANDSTILL_THRESHOLD) {
+                    _state.value = MeasureState.READY
+                    _combinedPhase.value = CombinedPhase.ACCEL
+                }
+            }
+
+            MeasureState.READY -> {
+                if (data.speedKmh > STANDSTILL_THRESHOLD) {
+                    _state.value = MeasureState.MEASURING
+                    _combinedPhase.value = CombinedPhase.ACCEL
+                    startTime = System.currentTimeMillis()
+                    peakSpeed = data.speedKmh
+                    speedLog.clear()
+                    splits.clear()
+                    trackPoints.clear()
+                    distanceCheckpoints.clear()
+                    recordedSplits.clear()
+                    recordedCheckpoints.clear()
+                    currentDistance = 0.0
+                    accelEndTime = 0L
+                    accelEndDistance = 0.0
+                    _liveDistance.value = 0.0
+                    speedLog.add(SpeedPoint(0, data.speedKmh))
+                    if (data.latitude != 0.0 || data.longitude != 0.0) {
+                        trackPoints.add(TrackPoint(0, data.latitude, data.longitude, data.speedKmh))
+                    }
+                }
+            }
+
+            MeasureState.MEASURING -> {
+                val elapsed = System.currentTimeMillis() - startTime
+                speedLog.add(SpeedPoint(elapsed, data.speedKmh))
+
+                if (data.latitude != 0.0 || data.longitude != 0.0) {
+                    trackPoints.add(TrackPoint(elapsed, data.latitude, data.longitude, data.speedKmh))
+                }
+
+                if (data.speedKmh > peakSpeed) {
+                    peakSpeed = data.speedKmh
+                }
+
+                // 실시간 거리 계산
+                if (speedLog.size >= 2) {
+                    val prev = speedLog[speedLog.size - 2]
+                    val curr = speedLog.last()
+                    val dtSec = (curr.timeMs - prev.timeMs) / 1000.0
+                    val avgSpeedMs = (prev.speedKmh + curr.speedKmh) / 2.0 / 3.6
+                    currentDistance += avgSpeedMs * dtSec
+                    _liveDistance.value = currentDistance
+                }
+
+                when (_combinedPhase.value) {
+                    CombinedPhase.ACCEL -> {
+                        // 가속 구간: 구간별 랩타임 기록
+                        for (splitSpeed in SPLIT_SPEEDS) {
+                            if (splitSpeed !in recordedSplits && data.speedKmh >= splitSpeed) {
+                                val exactTime = interpolateTargetTime(splitSpeed)
+                                val isMajor = splitSpeed in MAJOR_SPLITS
+                                splits.add(SplitTime(splitSpeed, exactTime, currentDistance, isMajor))
+                                recordedSplits.add(splitSpeed)
+                                _liveSplits.value = splits.toList()
+                            }
+                        }
+
+                        // 거리 체크포인트
+                        for ((checkDist, label) in DISTANCE_CHECKPOINTS) {
+                            if (checkDist !in recordedCheckpoints && currentDistance >= checkDist) {
+                                val exactTime = interpolateDistanceTime(checkDist)
+                                distanceCheckpoints.add(DistanceCheckpoint(checkDist, label, exactTime, data.speedKmh))
+                                recordedCheckpoints.add(checkDist)
+                                _liveDistanceCheckpoints.value = distanceCheckpoints.toList()
+                            }
+                        }
+
+                        // 목표속도 도달 -> 감속 단계로 전환
+                        if (data.speedKmh >= targetSpeed) {
+                            accelEndTime = System.currentTimeMillis()
+                            accelEndDistance = currentDistance
+                            _combinedPhase.value = CombinedPhase.DECEL
+                        }
+
+                        // 정차 리셋 (오발진 방지)
+                        if (data.speedKmh <= STANDSTILL_THRESHOLD && elapsed > 1000) {
+                            _state.value = MeasureState.READY
+                            speedLog.clear()
+                            splits.clear()
+                            trackPoints.clear()
+                            distanceCheckpoints.clear()
+                            recordedSplits.clear()
+                            recordedCheckpoints.clear()
+                            currentDistance = 0.0
+                            _liveSplits.value = emptyList()
+                            _liveDistanceCheckpoints.value = emptyList()
+                            _liveDistance.value = 0.0
+                        }
+                    }
+
+                    CombinedPhase.DECEL -> {
+                        // 감속 단계: 정지하면 완료
+                        if (data.speedKmh <= STANDSTILL_THRESHOLD) {
+                            val totalElapsed = System.currentTimeMillis() - startTime
+                            val accelTime = accelEndTime - startTime
+                            val decelTime = totalElapsed - accelTime
+                            val logList = speedLog.toList()
+                            val tpList = trackPoints.toList()
+                            _result.value = MeasureResult(
+                                targetSpeed = targetSpeed,
+                                elapsedMs = totalElapsed,
+                                peakSpeed = peakSpeed,
+                                speedLog = logList,
+                                splits = splits.toList(),
+                                trackPoints = tpList,
+                                distanceBySpeed = calcDistanceBySpeed(logList),
+                                distanceByGps = calcDistanceByGps(tpList),
+                                distanceCheckpoints = distanceCheckpoints.toList(),
+                                measureMode = MeasureMode.COMBINED,
+                                peakG = peakG,
+                                accelMs = accelTime,
+                                decelMs = decelTime,
+                                accelDistance = accelEndDistance,
+                                decelDistance = (currentDistance - accelEndDistance).coerceAtLeast(0.0)
+                            )
+                            _state.value = MeasureState.FINISHED
+                        }
+                    }
                 }
             }
 

@@ -151,10 +151,10 @@ fun MainScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         // 모드별 안내 텍스트
-        val modeLabel = if (measureMode == MeasureMode.ACCELERATION) {
-            "0-${targetSpeed} km/h"
-        } else {
-            "${decelStartSpeed}-0 km/h"
+        val modeLabel = when (measureMode) {
+            MeasureMode.ACCELERATION -> "0-${targetSpeed} km/h"
+            MeasureMode.DECELERATION -> "${decelStartSpeed}-0 km/h"
+            MeasureMode.COMBINED -> "0-${targetSpeed}-0 km/h"
         }
         Text(
             modeLabel,
@@ -173,22 +173,29 @@ fun MainScreen(
             enabled = isReady,
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (measureMode == MeasureMode.ACCELERATION) c.accent else c.danger,
-                disabledContainerColor = (if (measureMode == MeasureMode.ACCELERATION) c.accent else c.danger).copy(alpha = 0.3f)
+                containerColor = when (measureMode) {
+                    MeasureMode.DECELERATION -> c.danger
+                    else -> c.accent
+                },
+                disabledContainerColor = when (measureMode) {
+                    MeasureMode.DECELERATION -> c.danger.copy(alpha = 0.3f)
+                    else -> c.accent.copy(alpha = 0.3f)
+                }
             )
         ) {
             Icon(
-                if (isReady) {
-                    if (measureMode == MeasureMode.ACCELERATION) Icons.Filled.Speed else Icons.Filled.Speed
-                } else Icons.Filled.HourglassTop,
+                if (isReady) Icons.Filled.Speed else Icons.Filled.HourglassTop,
                 contentDescription = null,
                 modifier = Modifier.size(28.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
                 if (isReady) {
-                    if (measureMode == MeasureMode.ACCELERATION) stringResource(R.string.start_measure)
-                    else stringResource(R.string.start_braking_test)
+                    when (measureMode) {
+                        MeasureMode.ACCELERATION -> stringResource(R.string.start_measure)
+                        MeasureMode.DECELERATION -> stringResource(R.string.start_braking_test)
+                        MeasureMode.COMBINED -> stringResource(R.string.start_combined_test)
+                    }
                 } else stringResource(R.string.preparing),
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp
@@ -227,20 +234,23 @@ private fun MeasureModeTabs(
     val c = LocalZero100Colors.current
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         val isAccel = currentMode == MeasureMode.ACCELERATION
+        val isDecel = currentMode == MeasureMode.DECELERATION
+        val isCombined = currentMode == MeasureMode.COMBINED
         FilterChip(
             selected = isAccel,
             onClick = { onModeChange(MeasureMode.ACCELERATION) },
             label = {
                 Text(
                     stringResource(R.string.mode_accel),
-                    fontWeight = if (isAccel) FontWeight.Bold else FontWeight.Normal
+                    fontWeight = if (isAccel) FontWeight.Bold else FontWeight.Normal,
+                    fontSize = 13.sp
                 )
             },
             leadingIcon = {
-                Icon(Icons.Filled.TrendingUp, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(Icons.Filled.TrendingUp, contentDescription = null, modifier = Modifier.size(16.dp))
             },
             modifier = Modifier.weight(1f),
             colors = FilterChipDefaults.filterChipColors(
@@ -254,20 +264,45 @@ private fun MeasureModeTabs(
             shape = RoundedCornerShape(12.dp)
         )
         FilterChip(
-            selected = !isAccel,
+            selected = isDecel,
             onClick = { onModeChange(MeasureMode.DECELERATION) },
             label = {
                 Text(
                     stringResource(R.string.mode_decel),
-                    fontWeight = if (!isAccel) FontWeight.Bold else FontWeight.Normal
+                    fontWeight = if (isDecel) FontWeight.Bold else FontWeight.Normal,
+                    fontSize = 13.sp
                 )
             },
             leadingIcon = {
-                Icon(Icons.Filled.TrendingDown, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(Icons.Filled.TrendingDown, contentDescription = null, modifier = Modifier.size(16.dp))
             },
             modifier = Modifier.weight(1f),
             colors = FilterChipDefaults.filterChipColors(
                 selectedContainerColor = c.danger,
+                selectedLabelColor = c.textPrimary,
+                selectedLeadingIconColor = c.textPrimary,
+                containerColor = c.card,
+                labelColor = c.textSecondary,
+                iconColor = c.textSecondary
+            ),
+            shape = RoundedCornerShape(12.dp)
+        )
+        FilterChip(
+            selected = isCombined,
+            onClick = { onModeChange(MeasureMode.COMBINED) },
+            label = {
+                Text(
+                    stringResource(R.string.mode_combined),
+                    fontWeight = if (isCombined) FontWeight.Bold else FontWeight.Normal,
+                    fontSize = 13.sp
+                )
+            },
+            leadingIcon = {
+                Icon(Icons.Filled.SwapVert, contentDescription = null, modifier = Modifier.size(16.dp))
+            },
+            modifier = Modifier.weight(1f),
+            colors = FilterChipDefaults.filterChipColors(
+                selectedContainerColor = c.accent,
                 selectedLabelColor = c.textPrimary,
                 selectedLeadingIconColor = c.textPrimary,
                 containerColor = c.card,

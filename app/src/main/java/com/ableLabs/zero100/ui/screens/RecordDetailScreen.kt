@@ -31,12 +31,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ableLabs.zero100.R
 import com.ableLabs.zero100.data.MeasurementRecord
+import com.ableLabs.zero100.data.Vehicle
 import com.ableLabs.zero100.measurement.SplitTime
 import com.ableLabs.zero100.measurement.TrackPoint
 import com.ableLabs.zero100.ui.theme.*
 import com.ableLabs.zero100.viewmodel.MainViewModel
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.core.content.FileProvider
 
 /**
  * trackPointsJson 파싱 유틸
@@ -136,12 +139,18 @@ fun RecordDetailScreen(
 ) {
     val c = LocalZero100Colors.current
     var record by remember { mutableStateOf<MeasurementRecord?>(null) }
+    var vehicle by remember { mutableStateOf<Vehicle?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showExportMenu by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     LaunchedEffect(recordId) {
-        record = viewModel.getRecordById(recordId)
+        val rec = viewModel.getRecordById(recordId)
+        record = rec
+        if (rec != null && rec.vehicleId > 0) {
+            vehicle = viewModel.getVehicleById(rec.vehicleId)
+        }
         isLoading = false
     }
 
@@ -319,6 +328,76 @@ fun RecordDetailScreen(
                     if (rec.isRolloutApplied) {
                         DetailBadge(text = "1ft 보정", color = c.accent)
                     }
+
+                    // Peak G
+                    if (rec.peakG > 0.05f) {
+                        DetailBadge(
+                            text = String.format("%.2fG", rec.peakG),
+                            color = c.warning
+                        )
+                    }
+                }
+
+                // 차량 이름 표시
+                vehicle?.let { v ->
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = c.info.copy(alpha = 0.1f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Filled.DirectionsCar, contentDescription = null, tint = c.info, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(v.name, color = c.info, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                            if (v.make.isNotBlank() || v.model.isNotBlank()) {
+                                Text(" (${listOfNotNull(v.make.takeIf { it.isNotBlank() }, v.model.takeIf { it.isNotBlank() }).joinToString(" ")})",
+                                    color = c.textSecondary, fontSize = 12.sp)
+                            }
+                        }
+                    }
+                }
+
+                // 복합 테스트 구간별 시간
+                val isCombinedRecord = rec.measureMode == "COMBINED"
+                if (isCombinedRecord && rec.accelMs > 0) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = c.card),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(stringResource(R.string.combined_accel), color = c.textSecondary, fontSize = 12.sp)
+                                Text(
+                                    String.format("%.2fs", rec.accelMs / 1000.0),
+                                    color = c.info, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace
+                                )
+                            }
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(stringResource(R.string.combined_decel), color = c.textSecondary, fontSize = 12.sp)
+                                Text(
+                                    String.format("%.2fs", rec.decelMs / 1000.0),
+                                    color = c.danger, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace
+                                )
+                            }
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(stringResource(R.string.combined_total), color = c.textSecondary, fontSize = 12.sp)
+                                Text(
+                                    String.format("%.2fs", rec.elapsedSeconds),
+                                    color = c.accent, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace
+                                )
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -396,7 +475,7 @@ fun RecordDetailScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 val rec2 = record!!
                 val splits2 = parseSplitsJson(rec2.splitsJson)
@@ -413,8 +492,41 @@ fun RecordDetailScreen(
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = c.textPrimary)
                 ) {
                     Icon(Icons.Filled.Share, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.share_result))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(stringResource(R.string.share_result), fontSize = 13.sp)
+                }
+
+                // 내보내기 버튼
+                Box {
+                    OutlinedButton(
+                        onClick = { showExportMenu = true },
+                        modifier = Modifier
+                            .height(48.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = c.info),
+                        contentPadding = PaddingValues(horizontal = 12.dp)
+                    ) {
+                        Icon(Icons.Filled.FileDownload, contentDescription = null)
+                    }
+                    DropdownMenu(
+                        expanded = showExportMenu,
+                        onDismissRequest = { showExportMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.export_csv)) },
+                            onClick = {
+                                showExportMenu = false
+                                exportCsv(context, rec2)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.export_gpx)) },
+                            onClick = {
+                                showExportMenu = false
+                                exportGpx(context, rec2)
+                            }
+                        )
+                    }
                 }
 
                 OutlinedButton(
@@ -426,8 +538,8 @@ fun RecordDetailScreen(
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = c.danger)
                 ) {
                     Icon(Icons.Filled.Delete, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.delete))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(stringResource(R.string.delete), fontSize = 13.sp)
                 }
             }
         }
@@ -453,6 +565,80 @@ fun RecordDetailScreen(
                 }
             }
         )
+    }
+}
+
+// ── CSV / GPX 내보내기 ──
+
+private fun exportCsv(context: Context, record: MeasurementRecord) {
+    val trackPoints = parseTrackPointsJson(record.trackPointsJson)
+    val sb = StringBuilder("Time(ms),Speed(km/h),Lat,Lon,Distance(m)\n")
+
+    var distance = 0.0
+    trackPoints.forEachIndexed { i, pt ->
+        if (i > 0) {
+            val prev = trackPoints[i - 1]
+            val dtSec = (pt.timeMs - prev.timeMs) / 1000.0
+            val avgSpd = (prev.speedKmh + pt.speedKmh) / 2.0 / 3.6
+            distance += avgSpd * dtSec
+        }
+        sb.append("${pt.timeMs},${String.format("%.1f", pt.speedKmh)},${pt.lat},${pt.lon},${String.format("%.1f", distance)}\n")
+    }
+
+    val dateStr = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date(record.timestamp))
+    val fileName = "Zero100_${dateStr}.csv"
+    shareFile(context, fileName, sb.toString(), "text/csv")
+}
+
+private fun exportGpx(context: Context, record: MeasurementRecord) {
+    val trackPoints = parseTrackPointsJson(record.trackPointsJson)
+    if (trackPoints.isEmpty()) return
+
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
+    val baseTime = record.timestamp
+
+    val sb = StringBuilder()
+    sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+    sb.append("<gpx version=\"1.1\" creator=\"Zero100\" xmlns=\"http://www.topografix.com/GPX/1/1\">\n")
+    sb.append("  <trk>\n")
+    sb.append("    <name>Zero100 ${record.measureMode} ${String.format("%.2f", record.elapsedSeconds)}s</name>\n")
+    sb.append("    <trkseg>\n")
+    for (pt in trackPoints) {
+        if (pt.lat == 0.0 && pt.lon == 0.0) continue
+        val time = dateFormat.format(Date(baseTime + pt.timeMs))
+        val spdMs = pt.speedKmh / 3.6
+        sb.append("      <trkpt lat=\"${pt.lat}\" lon=\"${pt.lon}\">\n")
+        sb.append("        <time>$time</time>\n")
+        sb.append("        <extensions><speed>${String.format("%.1f", spdMs)}</speed></extensions>\n")
+        sb.append("      </trkpt>\n")
+    }
+    sb.append("    </trkseg>\n")
+    sb.append("  </trk>\n")
+    sb.append("</gpx>\n")
+
+    val dateStr = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date(record.timestamp))
+    val fileName = "Zero100_${dateStr}.gpx"
+    shareFile(context, fileName, sb.toString(), "application/gpx+xml")
+}
+
+private fun shareFile(context: Context, fileName: String, content: String, mimeType: String) {
+    try {
+        val cacheDir = File(context.cacheDir, "exports")
+        cacheDir.mkdirs()
+        val file = File(cacheDir, fileName)
+        file.writeText(content)
+
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = mimeType
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(intent, fileName))
+    } catch (_: Exception) {
+        // 무시 -- FileProvider 설정 문제 시
     }
 }
 

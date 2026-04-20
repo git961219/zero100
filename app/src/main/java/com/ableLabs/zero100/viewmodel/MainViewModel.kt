@@ -13,7 +13,10 @@ import com.ableLabs.zero100.data.MIGRATION_4_5
 import com.ableLabs.zero100.data.MIGRATION_5_6
 import com.ableLabs.zero100.data.MIGRATION_6_7
 import com.ableLabs.zero100.data.MIGRATION_7_8
+import com.ableLabs.zero100.data.MIGRATION_8_9
 import com.ableLabs.zero100.data.MeasurementRecord
+import com.ableLabs.zero100.data.Vehicle
+import com.ableLabs.zero100.gps.GforceManager
 import com.ableLabs.zero100.gps.ConnectionState
 import com.ableLabs.zero100.gps.GpsData
 import com.ableLabs.zero100.gps.InternalGpsManager
@@ -55,6 +58,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val internalGps = InternalGpsManager(app)
     val engine = Zero100Engine()
     val updateChecker = UpdateChecker(app)
+    val gforceManager = GforceManager(app)
 
     // GPS 소스 관리
     private val _gpsSource = MutableStateFlow(GpsSource.INTERNAL)
@@ -66,7 +70,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     private val db = Room.databaseBuilder(
         app, AppDatabase::class.java, "zero100-db"
-    ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8).build()
+    ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9).build()
 
     // --- SharedPreferences 설정 ---
     private val prefs = app.getSharedPreferences("zero100_settings", Context.MODE_PRIVATE)
@@ -84,6 +88,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _measureMode = MutableStateFlow(MeasureMode.ACCELERATION)
     val measureMode: StateFlow<MeasureMode> = _measureMode
+
+    // --- 차량 프로필 ---
+    private val _vehicles = MutableStateFlow<List<Vehicle>>(emptyList())
+    val vehicles: StateFlow<List<Vehicle>> = _vehicles
+
+    private val _selectedVehicleId = MutableStateFlow(prefs.getLong("selected_vehicle_id", 0L))
+    val selectedVehicleId: StateFlow<Long> = _selectedVehicleId
 
     private val _decelStartSpeed = MutableStateFlow(prefs.getInt("decel_start_speed", 100))
     val decelStartSpeed: StateFlow<Int> = _decelStartSpeed
@@ -224,6 +235,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         // 측정 완료 시 자동 저장
         viewModelScope.launch {
             engine.result.filterNotNull().collect { measureResult ->
+                gforceManager.stop()
                 // 1-foot rollout 보정 적용
                 val adjustedMs = if (_oneFootRollout.value) {
                     (measureResult.elapsedMs - 300).coerceAtLeast(0)
@@ -263,7 +275,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     avgSatellites = avgSats,
                     updateRateHz = hz,
                     distanceCheckpointsJson = distCheckJson,
-                    measureMode = measureResult.measureMode.name
+                    measureMode = measureResult.measureMode.name,
+                    peakG = measureResult.peakG,
+                    vehicleId = _selectedVehicleId.value,
+                    accelMs = measureResult.accelMs,
+                    decelMs = measureResult.decelMs,
+                    accelDistance = measureResult.accelDistance,
+                    decelDistance = measureResult.decelDistance
                 )
                 db.measurementDao().insert(record)
                 loadRecords()
@@ -271,6 +289,18 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
 
         loadRecords()
+        loadVehicles()
+
+        // G-force -> engine에 peakG 전달
+        viewModelScope.launch {
+            gforceManager.gforceData.collect { gData ->
+                val totalPeak = maxOf(
+                    kotlin.math.abs(gData.peakLongG),
+                    kotlin.math.abs(gData.peakLatG)
+                )
+                engine.peakG = totalPeak
+            }
+        }
 
         // GPS 자동 연결 시도 (외부 USB)
         viewModelScope.launch {
@@ -374,11 +404,15 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         if (_measureMode.value == MeasureMode.DECELERATION) {
             engine.decelStartSpeed = _decelStartSpeed.value.toDouble()
         }
+        // COMBINED: targetSpeed를 가속 목표로 사용
+        gforceManager.resetPeak()
+        gforceManager.start()
         engine.arm()
     }
 
     fun finishMeasurement() {
         engine.finish()
+        gforceManager.stop()
     }
 
     fun setMeasureMode(mode: MeasureMode) {
@@ -442,9 +476,60 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    // --- 차량 프로필 관리 ---
+
+    private fun loadVehicles() {
+        viewModelScope.launch {
+            _vehicles.value = db.vehicleDao().getAll()
+        }
+    }
+
+    fun addVehicle(name: String, make: String, model: String, year: Int, notes: String) {
+        viewModelScope.launch {
+            val vehicle = Vehicle(name = name, make = make, model = model, year = year, notes = notes)
+            db.vehicleDao().insert(vehicle)
+            loadVehicles()
+        }
+    }
+
+    fun updateVehicle(vehicle: Vehicle) {
+        viewModelScope.launch {
+            db.vehicleDao().update(vehicle)
+            loadVehicles()
+        }
+    }
+
+    fun deleteVehicle(vehicle: Vehicle) {
+        viewModelScope.launch {
+            db.vehicleDao().delete(vehicle)
+            if (_selectedVehicleId.value == vehicle.id) {
+                _selectedVehicleId.value = 0L
+                prefs.edit().putLong("selected_vehicle_id", 0L).apply()
+            }
+            loadVehicles()
+        }
+    }
+
+    fun setDefaultVehicle(vehicleId: Long) {
+        viewModelScope.launch {
+            db.vehicleDao().clearAllDefaults()
+            if (vehicleId > 0) {
+                db.vehicleDao().setDefault(vehicleId)
+            }
+            _selectedVehicleId.value = vehicleId
+            prefs.edit().putLong("selected_vehicle_id", vehicleId).apply()
+            loadVehicles()
+        }
+    }
+
+    suspend fun getVehicleById(id: Long): Vehicle? {
+        return db.vehicleDao().getById(id)
+    }
+
     override fun onCleared() {
         super.onCleared()
-        gpsManager.destroy()  // receiver 해제 + 연결 종료
+        gpsManager.destroy()
         internalGps.stop()
+        gforceManager.stop()
     }
 }

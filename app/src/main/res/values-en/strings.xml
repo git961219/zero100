@@ -178,4 +178,42 @@
     <string name="update_current_version">Current Version</string>
     <string name="update_check">Check for Updates</string>
     <string name="update_latest">You are up to date</string>
+
+    <!-- G-force -->
+    <string name="peak_g_label">Peak G: %1$s G</string>
+
+    <!-- Combined Test -->
+    <string name="mode_combined">Combined</string>
+    <string name="start_combined_test">Combined Test</string>
+    <string name="combined_accel">Accel</string>
+    <string name="combined_decel">Brake</string>
+    <string name="combined_total">Total</string>
+    <string name="combined_phase_accel">Accelerating</string>
+    <string name="combined_phase_decel">Braking</string>
+
+    <!-- CSV/GPX Export -->
+    <string name="export_csv">Export CSV</string>
+    <string name="export_gpx">Export GPX</string>
+
+    <!-- Vehicle Profile -->
+    <string name="vehicle_management">Vehicles</string>
+    <string name="vehicle_management_desc">Link vehicle info to measurement records.</string>
+    <string name="no_vehicles">No vehicles registered</string>
+    <string name="add_vehicle">Add Vehicle</string>
+    <string name="edit_vehicle">Edit Vehicle</string>
+    <string name="vehicle_name">Name (required)</string>
+    <string name="vehicle_make">Make</string>
+    <string name="vehicle_model">Model</string>
+    <string name="vehicle_year">Year</string>
+    <string name="vehicle_notes">Notes</string>
+    <string name="save">Save</string>
+
+    <!-- Run Compare -->
+    <string name="compare">Compare</string>
+    <string name="compare_select">Select (%d/2)</string>
+    <string name="compare_title">Run Compare</string>
+    <string name="compare_graph">Speed vs Time</string>
+    <string name="compare_splits">Split Comparison</string>
+    <string name="compare_speed_col">Speed</string>
+    <string name="compare_diff_col">Diff</string>
 </resources>

@@ -23,6 +23,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import com.ableLabs.zero100.ui.screens.CompareScreen
 import com.ableLabs.zero100.ui.screens.HistoryScreen
 import com.ableLabs.zero100.ui.screens.MainScreen
 import com.ableLabs.zero100.ui.screens.MeasureScreen
@@ -148,6 +149,9 @@ fun Zero100App(
                 onBack = { navController.popBackStack() },
                 onNavigateToDetail = { recordId ->
                     navController.navigate("detail/$recordId")
+                },
+                onNavigateToCompare = { id1, id2 ->
+                    navController.navigate("compare/$id1/$id2")
                 }
             )
         }
@@ -164,6 +168,22 @@ fun Zero100App(
         }
         composable("settings") {
             SettingsScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(
+            route = "compare/{id1}/{id2}",
+            arguments = listOf(
+                navArgument("id1") { type = NavType.LongType },
+                navArgument("id2") { type = NavType.LongType }
+            )
+        ) { backStackEntry ->
+            val id1 = backStackEntry.arguments?.getLong("id1") ?: 0L
+            val id2 = backStackEntry.arguments?.getLong("id2") ?: 0L
+            CompareScreen(
+                recordId1 = id1,
+                recordId2 = id2,
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() }
             )
