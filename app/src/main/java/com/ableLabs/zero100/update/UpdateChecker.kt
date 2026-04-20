@@ -24,26 +24,36 @@ class UpdateChecker(private val context: Context) {
         const val GITHUB_OWNER = "git961219"
         const val GITHUB_REPO = "zero100"
         const val API_URL = "https://api.github.com/repos/$GITHUB_OWNER/$GITHUB_REPO/releases/latest"
-        private const val TAG = "UpdateChecker"
+        private const val TAG = "Zero100OTA"
     }
 
     suspend fun checkForUpdate(): UpdateInfo? = withContext(Dispatchers.IO) {
         try {
-            val conn = openConnection(URL(API_URL))
+            Log.d(TAG, "Checking: $API_URL")
+            val url = URL(API_URL)
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
             conn.setRequestProperty("Accept", "application/vnd.github.v3+json")
+            conn.setRequestProperty("User-Agent", "Zero100-App")
+            conn.connectTimeout = 15000
+            conn.readTimeout = 15000
+            conn.instanceFollowRedirects = true
 
             val code = conn.responseCode
-            Log.d(TAG, "API response code: $code")
+            Log.d(TAG, "Response: $code")
 
             if (code != 200) {
-                Log.w(TAG, "API failed: $code")
+                val errorBody = try { conn.errorStream?.bufferedReader()?.readText() } catch (_: Exception) { null }
+                Log.w(TAG, "Failed: $code, body: ${errorBody?.take(200)}")
+                conn.disconnect()
                 return@withContext null
             }
 
             val response = conn.inputStream.bufferedReader().readText()
             conn.disconnect()
-            val json = JSONObject(response)
+            Log.d(TAG, "Response length: ${response.length}")
 
+            val json = JSONObject(response)
             val tagName = json.getString("tag_name")
             val versionName = tagName.removePrefix("v")
             val releaseNotes = json.optString("body", "")
@@ -59,17 +69,17 @@ class UpdateChecker(private val context: Context) {
             }
 
             if (downloadUrl.isEmpty()) {
-                Log.w(TAG, "No APK asset found")
+                Log.w(TAG, "No APK in assets")
                 return@withContext null
             }
 
             val currentVersion = getCurrentVersion()
             val isNewer = compareVersions(versionName, currentVersion) > 0
-            Log.d(TAG, "Current: $currentVersion, Latest: $versionName, isNewer: $isNewer")
+            Log.d(TAG, "Current=$currentVersion Latest=$versionName isNewer=$isNewer")
 
             UpdateInfo(versionName, downloadUrl, releaseNotes, isNewer)
         } catch (e: Exception) {
-            Log.e(TAG, "Check failed: ${e.message}", e)
+            Log.e(TAG, "Exception: ${e.javaClass.simpleName}: ${e.message}")
             null
         }
     }
@@ -80,8 +90,30 @@ class UpdateChecker(private val context: Context) {
     ): Boolean = withContext(Dispatchers.IO) {
         try {
             Log.d(TAG, "Downloading: $downloadUrl")
-            // GitHub redirect를 수동으로 따라가기
-            val conn = openConnection(URL(downloadUrl))
+
+            // GitHub download URL은 redirect함 — 수동 따라가기
+            var currentUrl = URL(downloadUrl)
+            var conn: HttpURLConnection
+            var redirects = 0
+            while (true) {
+                conn = currentUrl.openConnection() as HttpURLConnection
+                conn.setRequestProperty("User-Agent", "Zero100-App")
+                conn.instanceFollowRedirects = false
+                conn.connectTimeout = 15000
+                conn.readTimeout = 60000
+                conn.connect()
+
+                val code = conn.responseCode
+                if (code in 301..303 || code == 307 || code == 308) {
+                    val location = conn.getHeaderField("Location")
+                    conn.disconnect()
+                    if (location == null || redirects++ > 5) break
+                    currentUrl = URL(location)
+                    Log.d(TAG, "Redirect $redirects -> ${location.take(80)}")
+                } else {
+                    break
+                }
+            }
 
             val totalSize = conn.contentLength
             Log.d(TAG, "Download size: $totalSize")
@@ -102,13 +134,10 @@ class UpdateChecker(private val context: Context) {
                 }
             }
             conn.disconnect()
-
-            Log.d(TAG, "Download complete: ${apkFile.length()} bytes")
+            Log.d(TAG, "Downloaded: ${apkFile.length()} bytes")
 
             val uri = FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.fileprovider",
-                apkFile
+                context, "${context.packageName}.fileprovider", apkFile
             )
             val installIntent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(uri, "application/vnd.android.package-archive")
@@ -118,7 +147,7 @@ class UpdateChecker(private val context: Context) {
             context.startActivity(installIntent)
             true
         } catch (e: Exception) {
-            Log.e(TAG, "Download failed: ${e.message}", e)
+            Log.e(TAG, "Download failed: ${e.javaClass.simpleName}: ${e.message}")
             false
         }
     }
@@ -126,51 +155,16 @@ class UpdateChecker(private val context: Context) {
     fun getCurrentVersion(): String {
         return try {
             context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "0.0.0"
-        } catch (e: Exception) {
-            "0.0.0"
-        }
-    }
-
-    /**
-     * HTTP 연결 열기 — redirect를 수동으로 따라감 (GitHub 302 대응)
-     */
-    private fun openConnection(url: URL): HttpURLConnection {
-        var currentUrl = url
-        var redirectCount = 0
-        while (redirectCount < 5) {
-            val conn = currentUrl.openConnection() as HttpURLConnection
-            conn.instanceFollowRedirects = false
-            conn.connectTimeout = 15000
-            conn.readTimeout = 30000
-            conn.connect()
-
-            val code = conn.responseCode
-            if (code in 301..303 || code == 307 || code == 308) {
-                val location = conn.getHeaderField("Location")
-                conn.disconnect()
-                if (location == null) break
-                currentUrl = URL(location)
-                redirectCount++
-                Log.d(TAG, "Redirect $redirectCount -> $location")
-            } else {
-                return conn
-            }
-        }
-        // fallback: 기본 방식
-        val conn = url.openConnection() as HttpURLConnection
-        conn.connectTimeout = 15000
-        conn.readTimeout = 30000
-        return conn
+        } catch (e: Exception) { "0.0.0" }
     }
 
     private fun compareVersions(v1: String, v2: String): Int {
-        val parts1 = v1.split(".").map { it.toIntOrNull() ?: 0 }
-        val parts2 = v2.split(".").map { it.toIntOrNull() ?: 0 }
-        val maxLen = maxOf(parts1.size, parts2.size)
-        for (i in 0 until maxLen) {
-            val p1 = parts1.getOrElse(i) { 0 }
-            val p2 = parts2.getOrElse(i) { 0 }
-            if (p1 != p2) return p1.compareTo(p2)
+        val p1 = v1.split(".").map { it.toIntOrNull() ?: 0 }
+        val p2 = v2.split(".").map { it.toIntOrNull() ?: 0 }
+        for (i in 0 until maxOf(p1.size, p2.size)) {
+            val a = p1.getOrElse(i) { 0 }
+            val b = p2.getOrElse(i) { 0 }
+            if (a != b) return a.compareTo(b)
         }
         return 0
     }

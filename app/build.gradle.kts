@@ -13,8 +13,8 @@ android {
         applicationId = "com.ableLabs.zero100"
         minSdk = 26
         targetSdk = 35
-        versionCode = 7
-        versionName = "1.1.3"
+        versionCode = 8
+        versionName = "1.1.4"
     }
 
     buildTypes {
