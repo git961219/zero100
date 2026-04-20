@@ -21,7 +21,7 @@ class UpdateChecker(private val context: Context) {
 
     companion object {
         // GitHub API -- 실제 레포 만들면 여기만 수정
-        const val GITHUB_OWNER = "ablelabs"
+        const val GITHUB_OWNER = "git961219"
         const val GITHUB_REPO = "zero100"
         const val API_URL = "https://api.github.com/repos/$GITHUB_OWNER/$GITHUB_REPO/releases/latest"
     }
